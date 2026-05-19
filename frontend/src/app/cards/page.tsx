@@ -54,11 +54,7 @@ export default function CardsPage() {
     setLoading(true);
     // Page starts at 0 in backend, but 1 in frontend
     const pageParam = currentPage - 1;
-    // If itemsPerPage is all (999999), we pass all=true
-    const isAll = itemsPerPage === 999999;
-    const url = isAll 
-      ? `${getApiUrl()}/api/cards?all=true`
-      : `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
+    const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
     
     fetch(url)
       .then((res) => res.json())
@@ -182,7 +178,6 @@ export default function CardsPage() {
               <option value={20}>20</option>
               <option value={40}>40</option>
               <option value={80}>80</option>
-              <option value={999999}>{t('all')}</option>
             </select>
           </div>
         </div>
