@@ -1,0 +1,503 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { getApiUrl } from '@/config';
+import { useLanguage } from '@/context/LanguageContext';
+import styles from './CardDetail.module.css';
+
+interface Card {
+  id: number;
+  name: string;
+  namePt?: string;
+  nameJa?: string;
+  type: string;
+  description: string;
+  descriptionPt?: string;
+  descriptionJa?: string;
+  attack: number;
+  defense: number;
+  level: number;
+  attribute: string;
+  imageUrl: string;
+  imageUrlPt?: string;
+  imageUrlJa?: string;
+}
+
+interface UserCard {
+  id: number;
+  user: { id: number; username: string };
+  card: Card;
+  status: string;
+  price: number;
+}
+
+export default function CardDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { t, language } = useLanguage();
+  const [card, setCard] = useState<Card | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Trade Modal
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [availableListings, setAvailableListings] = useState<UserCard[]>([]);
+  const [selectedListing, setSelectedListing] = useState<UserCard | null>(null);
+  const [myCards, setMyCards] = useState<UserCard[]>([]);
+  const [selectedMyCardIds, setSelectedMyCardIds] = useState<number[]>([]);
+  const [tradeSuccess, setTradeSuccess] = useState('');
+  const [tradeError, setTradeError] = useState('');
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Marketplace & Add Card States
+  const [marketListings, setMarketListings] = useState<UserCard[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addStatus, setAddStatus] = useState('COLLECTION');
+  const [addPrice, setAddPrice] = useState<number>(0);
+  const [addLoading, setAddLoading] = useState(false);
+
+  const fetchMarketplaceListings = async () => {
+    try {
+      const res = await fetch(`${getApiUrl()}/api/user-cards/market`);
+      const data = await res.json();
+      setMarketListings(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching marketplace listings:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('yugioh_user');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    }
+
+    fetch(`${getApiUrl()}/api/cards/${params.id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Card not found');
+        return res.json();
+      })
+      .then((data: Card) => {
+        setCard(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching card:', err);
+        setLoading(false);
+      });
+
+    fetchMarketplaceListings();
+  }, [params.id]);
+
+  const handleOpenAddInventoryModal = () => {
+    if (!currentUser) {
+      alert(language === 'pt' ? 'Por favor, faça login para adicionar cartas ao seu inventário!' : 'Please login to add cards to your inventory!');
+      router.push('/login');
+      return;
+    }
+    setAddStatus('COLLECTION');
+    setAddPrice(0);
+    setShowAddModal(true);
+  };
+
+  const handleAddCardSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !card) return;
+    setAddLoading(true);
+    try {
+      const res = await fetch(`${getApiUrl()}/api/user-cards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          cardId: card.id,
+          status: addStatus,
+          price: Number(addPrice)
+        })
+      });
+      if (res.ok) {
+        alert(language === 'pt' ? 'Carta adicionada ao inventário com sucesso!' : 'Card successfully added to inventory!');
+        setShowAddModal(false);
+        fetchMarketplaceListings();
+      } else {
+        alert(language === 'pt' ? 'Falha ao adicionar carta ao inventário.' : 'Failed to add card to inventory.');
+      }
+    } catch (err) {
+      console.error('Error adding card to inventory:', err);
+      alert(language === 'pt' ? 'Ocorreu um erro.' : 'An error occurred.');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleOpenSaleAction = () => {
+    const saleListings = marketListings.filter(l => l.card.id === card?.id && l.status === 'FOR_SALE' && (!currentUser || l.user.id !== currentUser.id));
+    if (saleListings.length === 0) return;
+    const cheapest = saleListings.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+    
+    if (!currentUser) {
+      alert(language === 'pt' ? 'Por favor, faça login para comprar cartas!' : 'Please login to buy cards!');
+      router.push('/login');
+      return;
+    }
+    
+    const confirmBuy = window.confirm(
+      language === 'pt' 
+        ? `Deseja comprar esta carta de ${cheapest.user.username} por $${cheapest.price}?`
+        : `Do you want to buy this card from ${cheapest.user.username} for $${cheapest.price}?`
+    );
+    
+    if (confirmBuy) {
+      handleBuyCard(cheapest);
+    }
+  };
+
+  const handleBuyCard = async (listing: UserCard) => {
+    try {
+      const res = await fetch(`${getApiUrl()}/api/user-cards/${listing.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COLLECTION' })
+      });
+      if (res.ok) {
+        alert(
+          language === 'pt'
+            ? `Comprado com sucesso de ${listing.user.username} por $${listing.price}! Adicionado à sua coleção.`
+            : `Successfully purchased from ${listing.user.username} for $${listing.price}! Added to your collection.`
+        );
+        fetchMarketplaceListings();
+      } else {
+        alert('Failed to purchase card.');
+      }
+    } catch (err) {
+      console.error('Error buying card:', err);
+      alert('An error occurred.');
+    }
+  };
+
+  const handleOpenTradeModal = async () => {
+    if (!currentUser) {
+      alert('Please login to offer trades!');
+      router.push('/login');
+      return;
+    }
+
+    setShowTradeModal(true);
+    setModalLoading(true);
+    setTradeSuccess('');
+    setTradeError('');
+    setSelectedListing(null);
+    setSelectedMyCardIds([]);
+
+    try {
+      const [marketRes, myCardsRes] = await Promise.all([
+        fetch(`${getApiUrl()}/api/user-cards/market`),
+        fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`)
+      ]);
+
+      const marketData = await marketRes.json();
+      const myCardsData = await myCardsRes.json();
+
+      // Find listings of this card for trade by other users
+      const listings = marketData.filter((uc: UserCard) => 
+        uc.card.id === card?.id && 
+        uc.user.id !== currentUser.id &&
+        uc.status === 'FOR_TRADE'
+      );
+
+      setAvailableListings(listings);
+      if (listings.length > 0) {
+        setSelectedListing(listings[0]);
+      }
+
+      setMyCards(myCardsData.filter((c: UserCard) => c.status !== 'COLLECTION'));
+    } catch (err) {
+      console.error('Error loading modal data:', err);
+      setTradeError('Error loading trade data.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleToggleSelectMyCard = (id: number) => {
+    if (selectedMyCardIds.includes(id)) {
+      setSelectedMyCardIds(selectedMyCardIds.filter(item => item !== id));
+    } else {
+      setSelectedMyCardIds([...selectedMyCardIds, id]);
+    }
+  };
+
+  const handleOfferTradeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedListing || !currentUser || selectedMyCardIds.length === 0) {
+      setTradeError('Please select a target duelist listing and at least one card to offer.');
+      return;
+    }
+
+    setTradeError('');
+    try {
+      const res = await fetch(`${getApiUrl()}/api/trades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: currentUser.id,
+          receiverId: selectedListing.user.id,
+          offeredCardIds: selectedMyCardIds,
+          requestedCardIds: [selectedListing.id]
+        })
+      });
+
+      if (res.ok) {
+        setTradeSuccess('Trade proposal sent successfully! The duelist will review your offer.');
+        setTimeout(() => {
+          setShowTradeModal(false);
+        }, 2000);
+      } else {
+        setTradeError('Failed to send trade proposal.');
+      }
+    } catch (err) {
+      console.error('Error submitting trade:', err);
+      setTradeError('An error occurred.');
+    }
+  };
+
+  const getCardName = (c: any) => {
+    if (!c) return '';
+    if (language === 'pt') return c.namePt || c.name;
+    if (language === 'ja') return c.nameJa || c.name;
+    return c.name;
+  };
+
+  const getCardDesc = (c: any) => {
+    if (!c) return '';
+    if (language === 'pt') return c.descriptionPt || c.description;
+    if (language === 'ja') return c.descriptionJa || c.description;
+    return c.description;
+  };
+
+  const getCardImage = (c: any) => {
+    if (!c) return '';
+    if (language === 'pt') return c.imageUrlPt || c.imageUrl;
+    if (language === 'ja') return c.imageUrlJa || c.imageUrl;
+    return c.imageUrl;
+  };
+
+  if (loading) return <div className={styles.loading}>{t('cd_loading')}</div>;
+  if (!card) return <div className={styles.loading}>{t('cd_not_found')}</div>;
+
+  const otherListings = marketListings.filter(l => l.card.id === card.id && (!currentUser || l.user.id !== currentUser.id));
+  const hasTradeListings = otherListings.some(l => l.status === 'FOR_TRADE');
+  const hasSaleListings = otherListings.some(l => l.status === 'FOR_SALE');
+
+  return (
+    <div className="page-container">
+      <div className={`${styles.detailContainer} glass-panel`}>
+        <div className={styles.imageSection}>
+          <img 
+            src={getCardImage(card)} 
+            alt={getCardName(card)} 
+            className={styles.image} 
+            onError={(e) => { 
+              if (e.currentTarget.src !== card.imageUrl) {
+                e.currentTarget.src = card.imageUrl; 
+              }
+            }} 
+          />
+        </div>
+        <div className={styles.infoSection}>
+          <h1 className={styles.title}>{getCardName(card)}</h1>
+          <div className={styles.badges}>
+            <span className={styles.badge}>{card.type}</span>
+            {card.attribute && <span className={styles.badge}>{card.attribute}</span>}
+            {card.level > 0 && <span className={styles.badge}>Level {card.level}</span>}
+          </div>
+          
+          <div className={styles.statsRow}>
+            {card.attack !== null && <div className={styles.statBox}><span>ATK</span> <span>{card.attack}</span></div>}
+            {card.defense !== null && <div className={styles.statBox}><span>DEF</span> <span>{card.defense}</span></div>}
+          </div>
+
+          <div className={styles.descriptionBox}>
+            <h3>{t('cd_desc_title')}</h3>
+            <p>{getCardDesc(card)}</p>
+          </div>
+
+          <div className={styles.tradingSection}>
+            <button 
+              className={styles.addInventoryBtn} 
+              onClick={handleOpenAddInventoryModal}
+              style={{ marginRight: 'auto' }}
+            >
+              {t('prof_add_btn')}
+            </button>
+            {hasTradeListings && (
+              <button className="btn-primary" onClick={handleOpenTradeModal}>
+                {t('cd_trade_proposal')}
+              </button>
+            )}
+            {hasSaleListings && (
+              <button className="btn-primary" onClick={handleOpenSaleAction}>
+                {t('cd_sale_proposal')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showTradeModal && (
+        <div style={{ position: 'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.8)', backdropFilter:'blur(5px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000 }}>
+          <div className="glass-panel" style={{ width:'100%', maxWidth:'600px', padding:'2.5rem', display:'flex', flexDirection:'column', gap:'1.5rem', maxHeight:'90vh', overflowY:'auto' }}>
+            <h2>{t('cd_modal_title')} {getCardName(card)}</h2>
+
+            {modalLoading ? (
+              <p>Searching marketplace for duelists offering this card...</p>
+            ) : availableListings.length === 0 ? (
+              <div>
+                <p style={{ color: 'var(--text-secondary)' }}>No duelists currently have this card listed for trade in the marketplace.</p>
+                <button type="button" onClick={() => setShowTradeModal(false)} className="btn-primary" style={{ marginTop: '1rem' }}>Close</button>
+              </div>
+            ) : (
+              <form onSubmit={handleOfferTradeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {tradeSuccess && <div style={{ color: '#4aff80', background: 'rgba(74, 255, 128, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(74, 255, 128, 0.3)' }}>{tradeSuccess}</div>}
+                {tradeError && <div style={{ color: '#ff4a4a', background: 'rgba(255, 74, 74, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255, 74, 74, 0.3)' }}>{tradeError}</div>}
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{t('cd_modal_select_duelist')}</label>
+                  <select 
+                    value={selectedListing?.id || ''} 
+                    onChange={(e) => {
+                      const found = availableListings.find(l => l.id === Number(e.target.value));
+                      setSelectedListing(found || null);
+                    }}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
+                  >
+                    {availableListings.map(l => (
+                      <option key={l.id} value={l.id}>{l.user.username} (Listing #{l.id})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 'bold' }}>{t('cd_modal_select_inventory')}</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                    {myCards.map(myCard => {
+                      const isSelected = selectedMyCardIds.includes(myCard.id);
+                      return (
+                        <div 
+                          key={myCard.id} 
+                          onClick={() => handleToggleSelectMyCard(myCard.id)}
+                          style={{ 
+                            border: isSelected ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)', 
+                            background: isSelected ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.3)',
+                            padding: '0.8rem', 
+                            borderRadius: '6px', 
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <img 
+                            src={getCardImage(myCard.card)} 
+                            alt="" 
+                            style={{ width: '80px', height: '115px', objectFit: 'cover', borderRadius: '4px' }} 
+                            onError={(e) => { 
+                              if (e.currentTarget.src !== myCard.card.imageUrl) {
+                                e.currentTarget.src = myCard.card.imageUrl; 
+                              }
+                            }} 
+                          />
+                          <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{getCardName(myCard.card)}</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({myCard.status})</span>
+                        </div>
+                      );
+                    })}
+                    {myCards.length === 0 && <p>You do not have any cards available for trade or sale in your inventory. Add cards in your Profile first!</p>}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+                  <button type="submit" disabled={selectedMyCardIds.length === 0} className="btn-primary">Send Trade Offer</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <div style={{ position: 'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.8)', backdropFilter:'blur(5px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000 }}>
+          <div className="glass-panel" style={{ width:'100%', maxWidth:'500px', padding:'2.5rem', display:'flex', flexDirection:'column', gap:'1.5rem' }}>
+            <h2>{t('prof_modal_add_title')}</h2>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '6px' }}>
+              <img 
+                src={getCardImage(card)} 
+                alt="" 
+                style={{ width: '60px', height: '87px', objectFit: 'cover', borderRadius: '4px' }} 
+                onError={(e) => { 
+                  if (e.currentTarget.src !== card?.imageUrl) {
+                    e.currentTarget.src = card?.imageUrl || ''; 
+                  }
+                }} 
+              />
+              <div>
+                <strong style={{ display: 'block', fontSize: '1.1rem' }}>{getCardName(card)}</strong>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{card?.type}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddCardSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{t('prof_modal_status')}</label>
+                <select 
+                  value={addStatus} 
+                  onChange={(e) => setAddStatus(e.target.value)} 
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
+                >
+                  <option value="COLLECTION">Collection</option>
+                  <option value="FOR_SALE">For Sale</option>
+                  <option value="FOR_TRADE">For Trade</option>
+                </select>
+              </div>
+
+              {addStatus === 'FOR_SALE' && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{t('prof_modal_price')}</label>
+                  <input 
+                    type="number" 
+                    value={addPrice} 
+                    onChange={(e) => setAddPrice(Number(e.target.value))}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddModal(false)} 
+                  style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  {t('cancel')}
+                </button>
+                <button type="submit" className="btn-primary" disabled={addLoading}>
+                  {addLoading ? 'Adding...' : t('prof_modal_add_btn')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

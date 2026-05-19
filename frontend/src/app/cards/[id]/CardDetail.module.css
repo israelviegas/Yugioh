@@ -1,0 +1,148 @@
+.loading {
+  text-align: center;
+  padding: 4rem;
+  font-size: 1.5rem;
+  color: var(--accent-gold);
+  font-family: 'Cinzel', serif;
+}
+
+.detailContainer {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  padding: 3rem;
+  margin-top: 1rem;
+}
+
+.imageSection {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.image {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 2px solid var(--border-color);
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.title {
+  font-size: 3rem;
+  margin: 0;
+  color: var(--accent-gold);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.badges {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid var(--accent-gold);
+  color: var(--accent-gold);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Cinzel', serif;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.statsRow {
+  display: flex;
+  gap: 2rem;
+}
+
+.statBox {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 24px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statBox span:first-child {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.statBox span:last-child {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4aff80;
+  font-family: 'Cinzel', serif;
+}
+
+.descriptionBox {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.descriptionBox h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: var(--accent-gold);
+}
+
+.descriptionBox p {
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+}
+
+.tradingSection {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.addInventoryBtn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-family: 'Cinzel', serif;
+  font-weight: bold;
+  border: 1px solid var(--border-color);
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.addInventoryBtn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+.tradingSection h3 {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin: 0;
+}
