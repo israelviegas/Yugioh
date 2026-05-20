@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import TiltCardWrapper from '@/components/TiltCardWrapper';
+
 import { getApiUrl } from '@/config';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './Profile.module.css';
@@ -36,12 +36,14 @@ interface Trade {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { t, language } = useLanguage();
+  const { t, language, formatPrice, currencySymbol } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [activeTab, setActiveTab] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  // Controla o preço digitado localmente — só salva no servidor ao sair do campo
+  const [editingPrices, setEditingPrices] = useState<Record<number, string>>({});
 
   // Modal Add Card
   const [showAddModal, setShowAddModal] = useState(false);
@@ -352,7 +354,7 @@ export default function ProfilePage() {
               <h2 className={styles.sectionTitle}>{activeTab} Inventory</h2>
               <div className={styles.cardsGrid}>
                 {filteredCards.map(uc => (
-                  <TiltCardWrapper key={uc.id} className={`${styles.cardItem} glass-panel`}>
+                  <div key={uc.id} className={`${styles.cardItem} glass-panel`}>
                     <img 
                       src={getCardImage(uc.card)} 
                       alt={getCardName(uc.card)} 
@@ -365,7 +367,7 @@ export default function ProfilePage() {
                     />
                     <h3 className={styles.cardName}>{getCardName(uc.card)}</h3>
                     <span className={styles.cardStatus}>{uc.status}</span>
-                    {uc.status === 'FOR_SALE' && <span className={styles.cardPrice}>${uc.price}</span>}
+                    {uc.status === 'FOR_SALE' && <span className={styles.cardPrice}>{formatPrice(uc.price)}</span>}
 
                     <div className={styles.cardActions}>
                       <select 
@@ -380,9 +382,22 @@ export default function ProfilePage() {
 
                       {uc.status === 'FOR_SALE' && (
                         <input 
-                          type="number" 
-                          value={uc.price} 
-                          onChange={(e) => handleUpdateCard(uc.id, uc.status, Number(e.target.value))}
+                          type="number"
+                          value={editingPrices[uc.id] ?? uc.price}
+                          onChange={(e) =>
+                            setEditingPrices(prev => ({ ...prev, [uc.id]: e.target.value }))
+                          }
+                          onBlur={() => {
+                            const val = Number(editingPrices[uc.id] ?? uc.price);
+                            handleUpdateCard(uc.id, uc.status, val);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = Number(editingPrices[uc.id] ?? uc.price);
+                              handleUpdateCard(uc.id, uc.status, val);
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
                           className={styles.actionInput}
                           placeholder="Price"
                         />
@@ -392,7 +407,7 @@ export default function ProfilePage() {
                         {t('prof_remove_btn')}
                       </button>
                     </div>
-                  </TiltCardWrapper>
+                  </div>
                 ))}
                 {filteredCards.length === 0 && <p>No cards found in this section.</p>}
               </div>
@@ -483,7 +498,7 @@ export default function ProfilePage() {
 
               {newStatus === 'FOR_SALE' && (
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_modal_price')}</label>
+                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_modal_price').replace('($)', `(${currencySymbol})`)}</label>
                   <input 
                     type="number" 
                     value={newPrice} 

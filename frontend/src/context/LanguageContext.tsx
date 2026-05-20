@@ -14,18 +14,19 @@ interface Translations {
 
 const translations: Translations = {
   // Navbar
-  nav_cards: { en: 'Cards', pt: 'Cartas', ja: 'カード' },
+  nav_cards: { en: 'Catalog', pt: 'Catálogo', ja: 'カタログ' },
   nav_market: { en: 'Market', pt: 'Mercado', ja: 'マーケット' },
   nav_strategies: { en: 'Strategies', pt: 'Estratégias', ja: '戦略' },
+  nav_inventory: { en: 'My Inventory', pt: 'Meu Inventário', ja: 'マイインベントリ' },
   nav_login: { en: 'Login', pt: 'Entrar', ja: 'ログイン' },
   nav_logout: { en: 'Logout', pt: 'Sair', ja: 'ログアウト' },
 
   // Home
   home_hero_title: { en: 'THE ULTIMATE YU-GI-OH! TRADING HUB', pt: 'O MAIOR HUB DE TROCAS DE YU-GI-OH!', ja: '究極の遊戯王トレーディングハブ' },
   home_hero_subtitle: { en: 'Buy, sell, and trade legendary cards with duelists worldwide. Share winning strategies and become the King of Games.', pt: 'Compre, venda e troque cartas lendárias com duelistas de todo o mundo. Compartilhe estratégias e torne-se o Rei dos Jogos.', ja: '世界中のデュエリストと伝説のカードを売買・トレード。勝利の戦略を共有し、キング・オブ・ゲームズになろう。' },
-  home_cta_explore: { en: 'Explore Database', pt: 'Explorar Catálogo', ja: 'データベースを探す' },
+  home_cta_explore: { en: 'Explore Catalog', pt: 'Explorar Catálogo', ja: 'カタログを探す' },
   home_cta_market: { en: 'Enter Marketplace', pt: 'Entrar no Mercado', ja: 'マーケットに入る' },
-  home_feat1_title: { en: 'Card Database', pt: 'Banco de Cartas', ja: 'カードデータベース' },
+  home_feat1_title: { en: 'Card Catalog', pt: 'Catálogo de Cartas', ja: 'カードカタログ' },
   home_feat1_desc: { en: 'Explore over 10,000+ Yu-Gi-Oh! cards with complete stats, rulings, and high-resolution artworks.', pt: 'Explore mais de 10.000 cartas de Yu-Gi-Oh! com estatísticas completas, regras e artes em alta resolução.', ja: '10,000枚以上の遊戯王カードの詳細ステータス、裁定、高解像度アートワークを閲覧できます。' },
   home_feat2_title: { en: 'Marketplace', pt: 'Mercado de Duelistas', ja: 'マーケットプレイス' },
   home_feat2_desc: { en: 'List your rare cards for sale or set up secure trade proposals with other verified collectors.', pt: 'Anuncie suas cartas raras para venda ou crie propostas de troca seguras com outros colecionadores.', ja: 'レアカードを出品したり、他のコレクターと安全なトレード提案を行うことができます。' },
@@ -33,7 +34,8 @@ const translations: Translations = {
   home_feat3_desc: { en: 'Master the meta. Read and share advanced deck breakdowns, combo guides, and tournament reports.', pt: 'Domine o meta. Leia e compartilhe análises de decks, guias de combos e relatórios de torneios.', ja: 'メタを制覇しよう。上級者のデッキ解説、コンボガイド、大会レポートを読んだり共有したりできます。' },
 
   // Cards
-  cards_title: { en: 'Card Database', pt: 'Banco de Cartas', ja: 'カードデータベース' },
+  cards_title: { en: 'Card Catalog', pt: 'Catálogo de Cartas', ja: 'カードカタログ' },
+  cards_subtitle: { en: 'Here you find all cards from the YU-GI-OH universe', pt: 'Aqui você encontra todas as cartas do universo de YU-GI-OH', ja: '遊戯王のカードがすべてここに揃っています' },
   search_placeholder: { en: 'Search by name...', pt: 'Buscar por nome...', ja: '名前で検索...' },
   cards_per_page: { en: 'Cards per page:', pt: 'Cartas por página:', ja: '表示件数:' },
   summoning_cards: { en: 'Summoning cards...', pt: 'Invocando cartas...', ja: 'カードを召喚中...' },
@@ -44,6 +46,11 @@ const translations: Translations = {
 
   // Marketplace
   market_title: { en: 'Marketplace Hub', pt: 'Centro de Mercado', ja: 'マーケットプレイスハブ' },
+  market_subtitle: {
+    en: 'Here you find cards for sale or trade listed by our players',
+    pt: 'Aqui você encontra as cartas para venda ou troca colocadas pelos nossos jogadores',
+    ja: 'ここでは、プレイヤーが出品した販売・交換用のカードを見つけることができます',
+  },
   search_market: { en: 'Search market...', pt: 'Buscar no mercado...', ja: '市場を検索...' },
   all_listings: { en: 'All Listings', pt: 'Todos os Anúncios', ja: 'すべての出品' },
   for_sale: { en: 'For Sale', pt: 'À Venda', ja: '販売中' },
@@ -81,7 +88,7 @@ const translations: Translations = {
   prof_modal_add_title: { en: 'Add Card to Inventory', pt: 'Adicionar Carta ao Inventário', ja: 'インベントリにカードを追加' },
   prof_modal_select: { en: 'Select Card', pt: 'Selecionar Carta', ja: 'カードを選択' },
   prof_modal_status: { en: 'Status', pt: 'Status', ja: 'ステータス' },
-  prof_modal_price: { en: 'Price ($)', pt: 'Preço ($)', ja: '価格 ($)' },
+  prof_modal_price: { en: 'Price ($)', pt: 'Preço (R$)', ja: '価格 (¥)' },
   prof_modal_add_btn: { en: 'Add Card', pt: 'Adicionar Carta', ja: 'カードを追加' },
 
   // Login
@@ -110,6 +117,8 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
+  currencySymbol: string;
+  formatPrice: (price: number) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -140,8 +149,21 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return translations[key][language] || translations[key].en;
   };
 
+  const currencySymbol = language === 'pt' ? 'R$' : language === 'ja' ? '¥' : '$';
+
+  const formatPrice = (price: number): string => {
+    if (language === 'ja') {
+      // Iene não usa casas decimais
+      return `¥${Math.round(price).toLocaleString('ja-JP')}`;
+    }
+    if (language === 'pt') {
+      return `R$ ${price.toFixed(2).replace('.', ',')}`;
+    }
+    return `$${price.toFixed(2)}`;
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, currencySymbol, formatPrice }}>
       {children}
     </LanguageContext.Provider>
   );

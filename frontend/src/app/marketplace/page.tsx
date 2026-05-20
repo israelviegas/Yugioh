@@ -17,7 +17,7 @@ interface UserCard {
 
 export default function MarketplacePage() {
   const router = useRouter();
-  const { t, language } = useLanguage();
+  const { t, language, formatPrice } = useLanguage();
   const [marketCards, setMarketCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -179,25 +179,28 @@ export default function MarketplacePage() {
   return (
     <div className="page-container">
       <div className={styles.header}>
-        <h1 className={styles.title}>{t('market_title')}</h1>
-        <div className={styles.controls}>
-          <input 
-            type="text" 
-            placeholder={t('search_market')} 
-            className={styles.searchInput}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select 
-            className={styles.filterSelect}
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="ALL">{t('all_listings')}</option>
-            <option value="FOR_SALE">{t('for_sale')}</option>
-            <option value="FOR_TRADE">{t('for_trade')}</option>
-          </select>
+        <div className={styles.headerTop}>
+          <h1 className={styles.title}>{t('market_title')}</h1>
+          <div className={styles.controls}>
+            <input 
+              type="text" 
+              placeholder={t('search_market')} 
+              className={styles.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select 
+              className={styles.filterSelect}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="ALL">{t('all_listings')}</option>
+              <option value="FOR_SALE">{t('for_sale')}</option>
+              <option value="FOR_TRADE">{t('for_trade')}</option>
+            </select>
+          </div>
         </div>
+        <p className={styles.subtitle}>{t('market_subtitle')}</p>
       </div>
 
       {loading ? (
@@ -227,7 +230,7 @@ export default function MarketplacePage() {
                 {uc.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
               </span>
 
-              {uc.status === 'FOR_SALE' && <div className={styles.price}>${uc.price}</div>}
+              {uc.status === 'FOR_SALE' && <div className={styles.price}>{formatPrice(uc.price)}</div>}
 
               {uc.status === 'FOR_SALE' ? (
                 <button 

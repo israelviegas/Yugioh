@@ -75,6 +75,9 @@ export default function Navbar() {
           <Link href="/cards" className={`${styles.link} ${pathname.startsWith('/cards') ? styles.activeLink : ''}`}>{t('nav_cards')}</Link>
           <Link href="/marketplace" className={`${styles.link} ${pathname.startsWith('/marketplace') ? styles.activeLink : ''}`}>{t('nav_market')}</Link>
           <Link href="/strategies" className={`${styles.link} ${pathname.startsWith('/strategies') ? styles.activeLink : ''}`}>{t('nav_strategies')}</Link>
+          {user && (
+            <Link href="/profile" className={`${styles.link} ${pathname.startsWith('/profile') ? styles.activeLink : ''}`}>{t('nav_inventory')}</Link>
+          )}
           
           <div className={styles.langSelector}>
             <button 

@@ -31,6 +31,9 @@ public class Card {
     private String imageUrlPt;
     private String imageUrlJa;
 
+    @Column(columnDefinition = "boolean default false")
+    private Boolean translatedBySystem = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -75,4 +78,7 @@ public class Card {
 
     public String getImageUrlJa() { return imageUrlJa; }
     public void setImageUrlJa(String imageUrlJa) { this.imageUrlJa = imageUrlJa; }
+
+    public Boolean getTranslatedBySystem() { return translatedBySystem; }
+    public void setTranslatedBySystem(Boolean translatedBySystem) { this.translatedBySystem = translatedBySystem; }
 }

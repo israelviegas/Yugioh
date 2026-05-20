@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import com.yugioh.trading.services.TranslationService;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,23 +23,28 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final UserCardRepository userCardRepository;
     private final StrategyRepository strategyRepository;
+    private final TranslationService translationService;
 
     public DataSeeder(CardRepository cardRepository, UserRepository userRepository,
-                      UserCardRepository userCardRepository, StrategyRepository strategyRepository) {
+                      UserCardRepository userCardRepository, StrategyRepository strategyRepository,
+                      TranslationService translationService) {
         this.cardRepository = cardRepository;
         this.userRepository = userRepository;
         this.userCardRepository = userCardRepository;
         this.strategyRepository = strategyRepository;
+        this.translationService = translationService;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        if (cardRepository.count() == 0) {
-            seedCards();
-        }
-        if (userRepository.count() == 0) {
-            seedUsersAndStrategies();
-        }
+        new Thread(() -> {
+            if (cardRepository.count() == 0) {
+                seedCards();
+            }
+            if (userRepository.count() == 0) {
+                seedUsersAndStrategies();
+            }
+        }).start();
     }
 
     private String truncate(String val, int maxLen) {
@@ -96,14 +103,26 @@ public class DataSeeder implements CommandLineRunner {
                     if (apiCardPt != null) {
                         card.setNamePt(apiCardPt.getName());
                         card.setDescriptionPt(truncate(apiCardPt.getDesc(), 1990));
+                        card.setTranslatedBySystem(false);
                         if (apiCardPt.getCard_images() != null && !apiCardPt.getCard_images().isEmpty()) {
                             card.setImageUrlPt(apiCardPt.getCard_images().get(0).getImage_url());
                         } else {
                             card.setImageUrlPt("https://images.ygoprodeck.com/images/cards/pt/" + apiCardEn.getId() + ".jpg");
                         }
                     } else {
-                        card.setNamePt(apiCardEn.getName());
-                        card.setDescriptionPt(truncate(apiCardEn.getDesc(), 1990));
+                        System.out.println("Traduzindo carta: " + apiCardEn.getName());
+                        String translatedName = translationService.translate(apiCardEn.getName(), "en", "pt-BR");
+                        String translatedDesc = translationService.translate(apiCardEn.getDesc(), "en", "pt-BR");
+                        
+                        if (translatedName != null && translatedDesc != null) {
+                            card.setNamePt(translatedName);
+                            card.setDescriptionPt(truncate(translatedDesc, 1990));
+                            card.setTranslatedBySystem(true);
+                        } else {
+                            card.setNamePt(apiCardEn.getName());
+                            card.setDescriptionPt(truncate(apiCardEn.getDesc(), 1990));
+                            card.setTranslatedBySystem(false);
+                        }
                         card.setImageUrlPt("https://images.ygoprodeck.com/images/cards/pt/" + apiCardEn.getId() + ".jpg");
                     }
 
@@ -119,9 +138,18 @@ public class DataSeeder implements CommandLineRunner {
                     card.setImageUrlJa("https://images.ygoprodeck.com/images/cards/ja/" + apiCardEn.getId() + ".jpg");
 
                     cardsToSave.add(card);
+                    
+                    if (cardsToSave.size() >= 200) {
+                        cardRepository.saveAll(cardsToSave);
+                        cardsToSave.clear();
+                        System.out.println("Salvo lote de 200 cartas...");
+                    }
                 }
-                cardRepository.saveAll(cardsToSave);
-                System.out.println("Salvas " + cardsToSave.size() + " cartas multilíngues com sucesso!");
+                
+                if (!cardsToSave.isEmpty()) {
+                    cardRepository.saveAll(cardsToSave);
+                }
+                System.out.println("Importação de cartas finalizada!");
             }
         } catch (Exception e) {
             System.err.println("Erro ao popular cartas: " + e.getMessage());

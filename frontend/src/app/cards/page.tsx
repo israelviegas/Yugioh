@@ -159,26 +159,29 @@ export default function CardsPage() {
     <div className="page-container">
       <div className={styles.header}>
         <h1 className={styles.title}>{t('cards_title')}</h1>
-        <div className={styles.controls}>
-          <input 
-            type="text" 
-            placeholder={t('search_placeholder')} 
-            className={styles.searchInput}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div className={styles.itemsPerPageContainer}>
-            <span>{t('cards_per_page')}</span>
-            <select 
-              value={itemsPerPage} 
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className={styles.itemsPerPageSelect}
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={40}>40</option>
-              <option value={80}>80</option>
-            </select>
+        <p className={styles.subtitle}>{t('cards_subtitle')}</p>
+        <div className={styles.headerRow}>
+          <div className={styles.controls}>
+            <input 
+              type="text" 
+              placeholder={t('search_placeholder')} 
+              className={styles.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className={styles.itemsPerPageContainer}>
+              <span>{t('cards_per_page')}</span>
+              <select 
+                value={itemsPerPage} 
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className={styles.itemsPerPageSelect}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={40}>40</option>
+                <option value={80}>80</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
