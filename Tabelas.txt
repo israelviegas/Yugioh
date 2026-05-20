@@ -1,0 +1,38 @@
+Viewed Card.java:1-79
+Viewed Strategy.java:1-76
+Viewed Trade.java:1-42
+Viewed UserCard.java:1-27
+Viewed User.java:1-26
+
+Com base na modelagem do seu sistema (as classes em Java), aqui está a explicação do que cada tabela armazena em termos de negócio:
+
+### 1. `users` (Usuários)
+Armazena os dados de **todos os usuários cadastrados** na plataforma.
+- **O que guarda:** Credenciais de acesso e informações básicas, como nome de usuário (`username`), email (`email`), senha criptografada (`password`) e o nível de acesso/permissão (`role`, por exemplo, "USER" ou "ADMIN").
+
+### 2. `cards` (Cartas Base)
+Armazena o **catálogo oficial/global de cartas** de Yu-Gi-Oh!, independente de quem seja o dono delas.
+- **O que guarda:** Todos os metadados oficias de uma carta (Nome, tipo, nível, ataque, defesa, atributo) e descrições detalhadas. O diferencial é que ela já está preparada para **internacionalização**, guardando textos e links de imagens em três idiomas: Inglês (padrão), Português (`Pt`) e Japonês (`Ja`). O ID utilizado costuma ser o próprio ID oficial da API *YGOPRODeck*.
+
+### 3. `user_cards` (Inventário / Cartas do Usuário)
+Representa a **posse de uma carta por um usuário específico**. É aqui que o catálogo geral (`cards`) se liga aos usuários (`users`).
+- **O que guarda:** Quem é o dono da carta, qual é a carta e qual o estado atual dela no sistema. O campo `status` define se a carta está apenas na "Coleção" (`COLLECTION`), à venda (`FOR_SALE`) ou disponível para troca (`FOR_TRADE`). Se estiver à venda, armazena também o `price` (preço).
+
+### 4. `trades` (Propostas de Troca)
+Registra as **negociações/propostas de troca** entre dois usuários.
+- **O que guarda:** Quem está enviando a proposta de troca (`sender`), quem é o alvo da proposta (`receiver`) e a situação atual dessa negociação através do `status` (se está "Pendente" `PENDING`, "Aceita" `ACCEPTED` ou "Rejeitada" `REJECTED`).
+
+### 5. `trade_offered_cards` e `trade_requested_cards` (Itens da Troca)
+São tabelas auxiliares que detalham **o que está sendo trocado** em uma proposta (`trades`).
+- **`trade_offered_cards`**: Guarda quais cartas (do inventário `user_cards`) o remetente da proposta está **oferecendo** entregar.
+- **`trade_requested_cards`**: Guarda quais cartas o remetente está **pedindo/exigindo** receber do inventário da outra pessoa.
+
+### 6. `strategies` (Estratégias e Guias)
+Serve como uma base de conhecimento ou blog da comunidade onde os usuários podem **compartilhar guias e dicas de decks**.
+- **O que guarda:** O autor do artigo (`author`), um link de vídeo (`videoUrl`), a data de criação e os textos do artigo (título e conteúdo). Assim como as cartas, também tem suporte a textos nos três idiomas (Inglês, Português e Japonês).
+
+---
+
+Em resumo, o negócio da plataforma é: **Usuários** possuem cópias virtuais de **Cartas Oficiais** (no seu inventário). Eles podem publicar **Estratégias**, colocar suas cartas à venda ou iniciar **Propostas de Trocas** complexas (oferecendo múltiplas cartas em troca de outras) com demais membros da comunidade.
+
+Ficou clara a visão geral do banco? Qualquer dúvida pontual sobre como alterar alguma dessas lógicas é só falar!

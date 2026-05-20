@@ -1,0 +1,8 @@
+
+
+ - Correcoes
+ Observação sobre a Tradução: Acompanhando os bastidores do Backend, notei que a API gratuita de tradução
+ começou a retornar o erro de limite (429 Too Many Requests) devido ao volume gigantesco de cartas sendo
+ importadas simultaneamente. O sistema lidou com isso perfeitamente, usando o texto em inglês temporário
+ e marcando translated_by_system = false nas cartas que excederam a cota, sem travar a aplicação (exatamente como havíamos combinado no plano de mitigação de risco!).
+ Devemos aqui assinar uma api de traducao

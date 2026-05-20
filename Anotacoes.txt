@@ -2,6 +2,11 @@ yugi@kaibacorp.com
 Senha: heartofthecards
 
 
+Banco Postgree
+Nome do banco: yugiohdb
+usuario: postgres
+Senha: postgres
+
 Monte um prompt para a minha IA fazer essas alteracoes no sistema que ela desenvolveu em ntx.js + java com spring boot
 
 
@@ -45,3 +50,136 @@ Quer aprender a jogar ou melhorar suas estratégias? Participe das **aulas gratu
 💡 **Mesa de Estratégias de Trocas e Negociações**
 Aprenda táticas valiosas para melhorar suas trocas e vender suas cartas de forma eficiente! Também vamos abordar a **identificação de cards falsos**. **Sessões gratuitas!** #heromix #yugioh #onepiece #pokemon
 
+
+
+Atue como um arquiteto de software sênior e desenvolvedor full stack experiente.
+
+Quero que você projete e implemente um sistema completo de um site inspirado no universo de Yu-Gi-Oh, com foco em troca, compra e venda de cartas entre usuários, além de compartilhamento de estratégias.
+
+### 🎯 Objetivo
+Criar um site funcional, moderno, responsivo e intuitivo para fãs de Yu-Gi-Oh, onde os usuários possam:
+- Visualizar cartas disponíveis
+- Comprar, vender ou trocar cartas
+- Compartilhar estratégias (texto ou vídeo)
+
+---
+
+### 🧱 Requisitos técnicos
+
+Você pode escolher a stack que julgar mais adequada, mas priorize:
+- Frontend moderno (React, Next.js ou similar)
+- Backend estruturado (Java + Spring Boot)
+- Banco de dados em memória (ex: H2) para ambiente inicial
+- Arquitetura limpa (Clean Architecture ou MVC bem organizado)
+
+---
+
+### 🎨 UX/UI
+- Design responsivo (mobile + desktop)
+- Interface atrativa para fãs de Yu-Gi-Oh
+- Utilize cores, tipografia e estilos inspirados no jogo
+- Interface intuitiva e fácil navegação
+
+---
+
+### 👤 Autenticação
+- Usuário pode navegar sem login
+- Para comprar, vender ou trocar → login obrigatório
+- Métodos de login:
+  - Cadastro tradicional (email/senha)
+  - Login social:
+    - Google
+    - Facebook
+    - Instagram (se possível)
+
+---
+
+### 🃏 Funcionalidades principais
+
+#### Cartas
+- Listagem de cartas disponíveis
+- Filtro e busca
+- Visualização detalhada
+- Indicação:
+  - Venda
+  - Troca
+  - Preço
+  - Dono da carta
+
+#### Negociação
+- Usuário pode:
+  - Comprar cartas
+  - Oferecer trocas
+- Sistema simples de proposta (mock inicialmente)
+
+#### Estratégias
+- Sessão dedicada para estratégias de jogo
+- Usuários podem:
+  - Escrever estratégias (texto)
+  - Fazer upload de vídeos
+- Listagem pública de estratégias
+
+---
+
+### 🧪 Dados mockados
+- Buscar imagens e dados reais na internet (cartas de Yu-Gi-Oh)
+- Pré-popular o sistema com:
+  - Cartas
+  - Usuários
+  - Estratégias
+- O objetivo é que o sistema já funcione como um protótipo navegável
+
+---
+
+### 🗂️ Estrutura do projeto
+- Organize o projeto em frontend e backend
+- Documente a estrutura de pastas
+- Inclua instruções claras de execução
+
+---
+
+### 💾 Salvamento do projeto
+Salve todos os arquivos no seguinte diretório local:
+
+C:\Viegas\projetos\Yugioh
+
+---
+
+### 📦 Entregáveis esperados
+- Código completo do projeto
+- Instruções para rodar localmente
+- Dados mockados carregados automaticamente
+- Telas principais:
+  - Home
+  - Lista de cartas
+  - Detalhe da carta
+  - Estratégias
+  - Login / Cadastro
+  - Perfil do usuário
+
+---
+
+### ⭐ Diferenciais desejados
+- Layout moderno com boas práticas de UI/UX
+- Código limpo e bem comentado
+- Possível expansão futura (como chat entre usuários ou sistema de reputação)
+
+---
+
+### ⚠️ Observação
+Priorize entregar um sistema funcional, mesmo que com simplificações (especialmente nas integrações externas e pagamentos, que podem ser mockados).
+Sugestões atualizadas
+
+
+NA sessao Cartas, quando clico em uma carta, quero que execute a seguinte regra:
+
+1) Se a carta existir no mercado, e ela estiver como troca, apareca o botao proposta de troca
+apareca o botao + adicionar carta ao inventario, o mesmo botao que esta na aba do usuario, quando clico no nome do usuario
+O modal nese lugar nao tera a opcao do combo selecionar carta, somente o combo de Status
+
+2) Se a carta existirO modal nese lugar nao tera a opcao do combo selecionar carta, somente o combo de Status no mercado, e ela estiver como venda, apareca o botao proposta de venda
+apareca o botao + adicionar carta ao inventario, o mesmo botao que esta na aba do usuario, quando clico no nome do usuario.
+O modal nese lugar nao tera a opcao do combo selecionar carta, somente o combo de Status
+
+3) Se a carta nao existir no mercado, nao aparece o botao e apareca o botao + adicionar carta ao inventario, o mesmo botao que esta na aba do usuario, quando clico no nome do usuario
+O modal nese lugar nao tera a opcao do combo selecionar carta, somente o combo de Status
