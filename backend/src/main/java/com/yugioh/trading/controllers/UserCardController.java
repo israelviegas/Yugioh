@@ -20,11 +20,13 @@ public class UserCardController {
     private final UserCardRepository userCardRepository;
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
+    private final com.yugioh.trading.repositories.CardConditionRepository conditionRepository;
 
-    public UserCardController(UserCardRepository userCardRepository, UserRepository userRepository, CardRepository cardRepository) {
+    public UserCardController(UserCardRepository userCardRepository, UserRepository userRepository, CardRepository cardRepository, com.yugioh.trading.repositories.CardConditionRepository conditionRepository) {
         this.userCardRepository = userCardRepository;
         this.userRepository = userRepository;
         this.cardRepository = cardRepository;
+        this.conditionRepository = conditionRepository;
     }
 
     @PostMapping
@@ -41,6 +43,10 @@ public class UserCardController {
         userCard.setCard(cardOpt.get());
         userCard.setStatus(request.getStatus() != null ? request.getStatus() : "COLLECTION");
         userCard.setPrice(request.getPrice() != null ? request.getPrice() : 0.0);
+        
+        if (request.getConditionCode() != null) {
+            conditionRepository.findById(request.getConditionCode()).ifPresent(userCard::setCondition);
+        }
 
         UserCard saved = userCardRepository.save(userCard);
         return ResponseEntity.ok(saved);
@@ -59,6 +65,9 @@ public class UserCardController {
         }
         if (request.getPrice() != null) {
             userCard.setPrice(request.getPrice());
+        }
+        if (request.getConditionCode() != null) {
+            conditionRepository.findById(request.getConditionCode()).ifPresent(userCard::setCondition);
         }
 
         UserCard updated = userCardRepository.save(userCard);
@@ -91,6 +100,7 @@ public class UserCardController {
         private Long cardId;
         private String status;
         private Double price;
+        private String conditionCode;
 
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
@@ -100,15 +110,20 @@ public class UserCardController {
         public void setStatus(String status) { this.status = status; }
         public Double getPrice() { return price; }
         public void setPrice(Double price) { this.price = price; }
+        public String getConditionCode() { return conditionCode; }
+        public void setConditionCode(String conditionCode) { this.conditionCode = conditionCode; }
     }
 
     static class UpdateUserCardRequest {
         private String status;
         private Double price;
+        private String conditionCode;
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
         public Double getPrice() { return price; }
         public void setPrice(Double price) { this.price = price; }
+        public String getConditionCode() { return conditionCode; }
+        public void setConditionCode(String conditionCode) { this.conditionCode = conditionCode; }
     }
 }

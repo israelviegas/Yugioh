@@ -1,0 +1,36 @@
+Melhorias site ygo
+
+1. Conter Valores das cartas
+ a. ter valores oficiais, tanto maior quanto menos preço
+ b. mostrar sempre primeiro na pré-visualização menos valor
+ c. ter a identificação das cartas por raridade
+ d. caso quem esteja vendendo a carta tenha colocado a mesma carta porem com raridade diferente, deve mostrar os valores e a raridade quando clica para visualizar todo conteúdo
+
+2. Pesquisa de cartas
+ a. ter como pesquisar a carta tanto em inglês quanto em português e trouxer o mesmo conteúdo
+ b. sempre que retorna a pesquisa, mostrar em ordem de raridade
+ c. mostrar tanto de compra quanto o de troca
+ d. ao pesquisar a carta, após clicar nela, quando abrir as informações, deve mostrar, preço, raridade e quem ta vendendo. sempre ordenado do menor valor pro maior
+
+3. Segurança
+ a. dupla confirmação de compra, tanto de quem vendeu quanto quem comprou
+ b. ter um chat para negociar e marcar ponto de troca
+ c. ter um sistema de trade no site com valor mínimo aceitável entre troca de produtos
+ d. comprar pelo site
+
+4. Sistema de carrinho
+ a. ter botão de adicionar ao carrinho
+ b. ter botões de adicionar ou retirar produto
+ c. ter opção de continuar pra compra e voltar a comprar
+
+5. Adção de carta
+ a. ter como colocar qual a radidade da carta ao adicionar uma nova carta
+ b. trazer a carta so digitando ela
+ c. ter o estado da carta que ta adicionando, nova, semi nova, usada, levemente danificado
+
+6. sistema de envio
+ a. ser o sistema que mostra quando uma carta for enviada pelos correio
+ b. ter o estado e cidade de cada usuário para saberem ao comprar ou troca
+ c. ter o rastreador do envio do objeto "API dos correio talvez"
+ d. confirmação de quem ta fazendo a venda/troca que postou nos correios, com o protocolo ou algo que indique que foi mesmo enviado
+

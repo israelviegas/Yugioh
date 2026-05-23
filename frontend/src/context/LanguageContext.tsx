@@ -35,7 +35,11 @@ const translations: Translations = {
 
   // Cards
   cards_title: { en: 'Card Catalog', pt: 'Catálogo de Cartas', ja: 'カードカタログ' },
-  cards_subtitle: { en: 'Here you find all cards from the YU-GI-OH universe', pt: 'Aqui você encontra todas as cartas do universo de YU-GI-OH', ja: '遊戯王のカードがすべてここに揃っています' },
+  cards_subtitle: { 
+    en: 'Here you find all cards from the YU-GI-OH universe! You can also filter cards that have buy and trade offers listed by our players.', 
+    pt: 'Aqui você encontra todas as cartas do universo de YU-GI-OH!\nE você consegue filtrar as cartas que possuem ofertas de compra e troca anunciadas pelos nossos jogadores.', 
+    ja: '遊戯王のすべてのカードがここに見つかります！さらに、プレイヤーが掲示した購入やトレードのオファーがあるカードをフィルタリングすることもできます。' 
+  },
   search_placeholder: { en: 'Search by name...', pt: 'Buscar por nome...', ja: '名前で検索...' },
   cards_per_page: { en: 'Cards per page:', pt: 'Cartas por página:', ja: '表示件数:' },
   summoning_cards: { en: 'Summoning cards...', pt: 'Invocando cartas...', ja: 'カードを召喚中...' },
@@ -43,6 +47,11 @@ const translations: Translations = {
   prev: { en: 'Prev', pt: 'Anterior', ja: '前へ' },
   next: { en: 'Next', pt: 'Próxima', ja: '次へ' },
   all: { en: 'All', pt: 'Todas', ja: 'すべて' },
+  filter_all_cards: { en: 'All', pt: 'Todas', ja: 'すべて' },
+  filter_all_market: { en: 'For Sale or For Trade', pt: 'À Venda ou Para Troca', ja: '販売またはトレード' },
+  filter_for_sale: { en: 'For Sale', pt: 'À Venda', ja: '販売中' },
+  filter_for_trade: { en: 'For Trade', pt: 'Para Troca', ja: 'トレード用' },
+  filter_my_listings: { en: 'Listed by me', pt: 'Anunciadas por mim', ja: '私の出品' },
 
   // Marketplace
   market_title: { en: 'Marketplace Hub', pt: 'Centro de Mercado', ja: 'マーケットプレイスハブ' },
@@ -90,6 +99,20 @@ const translations: Translations = {
   prof_modal_status: { en: 'Status', pt: 'Status', ja: 'ステータス' },
   prof_modal_price: { en: 'Price ($)', pt: 'Preço (R$)', ja: '価格 (¥)' },
   prof_modal_add_btn: { en: 'Add Card', pt: 'Adicionar Carta', ja: 'カードを追加' },
+  prof_sync_api: { en: 'Sync API', pt: 'Sincronizar API', ja: 'APIを同期' },
+  prof_edit_profile: { en: 'Edit Profile', pt: 'Editar Perfil', ja: 'プロフィール編集' },
+  prof_edit_modal_title: { en: 'Edit Profile', pt: 'Editar Perfil', ja: 'プロフィール編集' },
+  prof_edit_username: { en: 'Username', pt: 'Nome de Usuário', ja: 'ユーザー名' },
+  prof_edit_email: { en: 'Email', pt: 'E-mail', ja: 'メールアドレス' },
+  prof_edit_password: { en: 'New Password (optional)', pt: 'Nova Senha (opcional)', ja: '新しいパスワード (任意)' },
+  prof_edit_password_ph: { en: 'Leave blank to keep the same', pt: 'Deixe em branco para manter a mesma', ja: '変更しない場合は空白' },
+  prof_edit_save: { en: 'Save', pt: 'Salvar', ja: '保存' },
+  prof_edit_success: { en: 'Profile updated successfully!', pt: 'Perfil atualizado com sucesso!', ja: 'プロフィールが正常に更新されました！' },
+  prof_edit_error: { en: 'Error updating profile.', pt: 'Erro ao atualizar perfil.', ja: 'プロフィールの更新中にエラーが発生しました。' },
+  prof_sync_confirm: { en: 'Do you want to start syncing cards with the API? This will run on the server in the background.', pt: 'Deseja iniciar a sincronização de cartas com a API? Isso rodará no servidor em segundo plano.', ja: 'APIとカードの同期を開始しますか？これはサーバーのバックグラウンドで実行されます。' },
+  prof_sync_success: { en: 'Synchronization started successfully on the server!', pt: 'Sincronização iniciada com sucesso no servidor!', ja: 'サーバーで同期が正常に開始されました！' },
+  prof_sync_error: { en: 'Error starting synchronization.', pt: 'Erro ao iniciar sincronização.', ja: '同期の開始中にエラーが発生しました。' },
+  prof_sync_comm_error: { en: 'Communication error when starting synchronization.', pt: 'Erro de comunicação ao iniciar sincronização.', ja: '同期開始時の通信エラー。' },
 
   // Login
   log_login_tab: { en: 'Login', pt: 'Entrar', ja: 'ログイン' },
@@ -106,11 +129,17 @@ const translations: Translations = {
   cd_loading: { en: 'Loading card data...', pt: 'Carregando dados da carta...', ja: 'カードデータを読み込み中...' },
   cd_not_found: { en: 'Card not found.', pt: 'Carta não encontrada.', ja: 'カードが見つかりません。' },
   cd_trade_proposal: { en: 'Trade Proposal', pt: 'Proposta de troca', ja: 'トレード提案' },
-  cd_sale_proposal: { en: 'Buy Proposal', pt: 'Proposta de venda', ja: '購入提案' },
+  cd_sale_proposal: { en: 'Buy Now', pt: 'Comprar Agora', ja: '今すぐ購入' },
   cd_modal_title: { en: 'Trade Proposal for', pt: 'Proposta de Troca por', ja: 'トレード提案:' },
   cd_modal_select_duelist: { en: 'Select Duelist Offering This Card:', pt: 'Selecione o Duelista Oferecendo esta Carta:', ja: 'このカードを出品しているデュエリストを選択:' },
   cd_modal_select_inventory: { en: 'Select Cards from your Inventory to Offer:', pt: 'Selecione Cartas do seu Inventário para Oferecer:', ja: '提供するインベントリのカードを選択:' },
-  cd_modal_send_btn: { en: 'Send Trade Offer', pt: 'Enviar Proposta de Troca', ja: 'トレード提案を送信' }
+  cd_modal_send_btn: { en: 'Send Trade Offer', pt: 'Enviar Proposta de Troca', ja: 'トレード提案を送信' },
+  cd_modal_searching: { en: 'Searching marketplace for duelists offering this card...', pt: 'Buscando no mercado duelistas oferecendo esta carta...', ja: 'このカードを出品しているデュエリストを検索中...' },
+  cd_modal_no_duelists: { en: 'No duelists currently have this card listed for trade in the marketplace.', pt: 'Nenhum duelista possui esta carta para troca no mercado no momento.', ja: '現在、このカードをトレードに出しているデュエリストはいません。' },
+  cd_modal_trade_success: { en: 'Trade proposal sent successfully! The duelist will review your offer.', pt: 'Proposta de troca enviada com sucesso! O duelista revisará sua oferta.', ja: 'トレード提案を送信しました！相手がオファーを確認します。' },
+  cd_modal_trade_fail: { en: 'Failed to send trade proposal.', pt: 'Falha ao enviar proposta de troca.', ja: 'トレード提案の送信に失敗しました。' },
+  cd_modal_trade_select_err: { en: 'Please select a target duelist listing and at least one card to offer.', pt: 'Por favor, selecione o anúncio de um duelista e pelo menos uma carta para oferecer.', ja: '対象のデュエリストの出品と、提供するカードを少なくとも1枚選択してください。' },
+  cd_modal_no_inventory: { en: 'You do not have any cards available for trade or sale in your inventory. Add cards in your Profile first!', pt: 'Você não tem cartas disponíveis para troca ou venda em seu inventário. Adicione cartas no seu Perfil primeiro!', ja: 'インベントリにトレードや販売が可能なカードがありません。先にプロフィールでカードを追加してください！' }
 };
 
 interface LanguageContextType {

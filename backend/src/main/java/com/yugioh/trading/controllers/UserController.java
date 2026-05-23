@@ -58,6 +58,28 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOpt.get();
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            user.setUsername(request.getUsername());
+        }
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            user.setPassword(request.getPassword());
+        }
+
+        User savedUser = userRepository.save(user);
+        return ResponseEntity.ok(savedUser);
+    }
+
     @GetMapping("/{id}/cards")
     public ResponseEntity<List<UserCard>> getUserCards(@PathVariable Long id) {
         List<UserCard> cards = userCardRepository.findByUserId(id);
@@ -91,5 +113,17 @@ public class UserController {
         public AuthResponse(String token, User user) { this.token = token; this.user = user; }
         public String getToken() { return token; }
         public User getUser() { return user; }
+    }
+
+    static class UserUpdateRequest {
+        private String username;
+        private String email;
+        private String password;
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
     }
 }

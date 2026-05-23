@@ -22,6 +22,13 @@ interface Card {
   imageUrl: string;
   imageUrlPt?: string;
   imageUrlJa?: string;
+  frameType?: string;
+  race?: string;
+  archetype?: string;
+  scale?: number;
+  linkval?: number;
+  linkmarkers?: string[];
+  cardSets?: any[];
 }
 
 interface UserCard {
@@ -54,8 +61,22 @@ export default function CardDetailPage() {
   const [marketListings, setMarketListings] = useState<UserCard[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addStatus, setAddStatus] = useState('COLLECTION');
+  const [addCondition, setAddCondition] = useState('NM');
   const [addPrice, setAddPrice] = useState<number>(0);
   const [addLoading, setAddLoading] = useState(false);
+  const [conditions, setConditions] = useState<any[]>([]);
+
+  const fetchConditions = async () => {
+    try {
+      const res = await fetch(`${getApiUrl()}/api/conditions`);
+      if (res.ok) {
+        const data = await res.json();
+        setConditions(data);
+      }
+    } catch (err) {
+      console.error('Error fetching conditions:', err);
+    }
+  };
 
   const fetchMarketplaceListings = async () => {
     try {
@@ -90,15 +111,19 @@ export default function CardDetailPage() {
       });
 
     fetchMarketplaceListings();
+    fetchConditions();
   }, [params.id]);
 
   const handleOpenAddInventoryModal = () => {
     if (!currentUser) {
-      alert(language === 'pt' ? 'Por favor, faça login para adicionar cartas ao seu inventário!' : 'Please login to add cards to your inventory!');
-      router.push('/login');
+      const confirmLogin = window.confirm(language === 'ja' ? 'インベントリにカードを追加するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para adicionar cartas ao seu inventário! Deseja ir para a tela de login?' : 'Please login to add cards to your inventory! Go to login page?');
+      if (confirmLogin) {
+        router.push('/login');
+      }
       return;
     }
     setAddStatus('COLLECTION');
+    setAddCondition('NM');
     setAddPrice(0);
     setShowAddModal(true);
   };
@@ -115,19 +140,20 @@ export default function CardDetailPage() {
           userId: currentUser.id,
           cardId: card.id,
           status: addStatus,
+          conditionCode: addCondition,
           price: Number(addPrice)
         })
       });
       if (res.ok) {
-        alert(language === 'pt' ? 'Carta adicionada ao inventário com sucesso!' : 'Card successfully added to inventory!');
+        alert(language === 'ja' ? 'カードがインベントリに正常に追加されました！' : language === 'pt' ? 'Carta adicionada ao inventário com sucesso!' : 'Card successfully added to inventory!');
         setShowAddModal(false);
         fetchMarketplaceListings();
       } else {
-        alert(language === 'pt' ? 'Falha ao adicionar carta ao inventário.' : 'Failed to add card to inventory.');
+        alert(language === 'ja' ? 'インベントリへのカードの追加に失敗しました。' : language === 'pt' ? 'Falha ao adicionar carta ao inventário.' : 'Failed to add card to inventory.');
       }
     } catch (err) {
       console.error('Error adding card to inventory:', err);
-      alert(language === 'pt' ? 'Ocorreu um erro.' : 'An error occurred.');
+      alert(language === 'ja' ? 'エラーが発生しました。' : language === 'pt' ? 'Ocorreu um erro.' : 'An error occurred.');
     } finally {
       setAddLoading(false);
     }
@@ -139,16 +165,20 @@ export default function CardDetailPage() {
     const cheapest = saleListings.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
     
     if (!currentUser) {
-      alert(language === 'pt' ? 'Por favor, faça login para comprar cartas!' : 'Please login to buy cards!');
-      router.push('/login');
+      const confirmLogin = window.confirm(language === 'ja' ? 'カードを購入するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para comprar cartas! Deseja ir para a tela de login?' : 'Please login to buy cards! Go to login page?');
+      if (confirmLogin) {
+        router.push('/login');
+      }
       return;
     }
     
-    const confirmBuy = window.confirm(
-      language === 'pt' 
-        ? `Deseja comprar esta carta de ${cheapest.user.username} por $${cheapest.price}?`
-        : `Do you want to buy this card from ${cheapest.user.username} for $${cheapest.price}?`
-    );
+    const confirmMsg = language === 'ja'
+      ? `このカードを ${cheapest.user.username} から $${cheapest.price} で購入しますか？`
+      : language === 'pt'
+      ? `Deseja comprar esta carta de ${cheapest.user.username} por $${cheapest.price}?`
+      : `Do you want to buy this card from ${cheapest.user.username} for $${cheapest.price}?`;
+      
+    const confirmBuy = window.confirm(confirmMsg);
     
     if (confirmBuy) {
       handleBuyCard(cheapest);
@@ -164,7 +194,9 @@ export default function CardDetailPage() {
       });
       if (res.ok) {
         alert(
-          language === 'pt'
+          language === 'ja'
+            ? `${listing.user.username} から $${listing.price} で購入しました！コレクションに追加されました。`
+            : language === 'pt'
             ? `Comprado com sucesso de ${listing.user.username} por $${listing.price}! Adicionado à sua coleção.`
             : `Successfully purchased from ${listing.user.username} for $${listing.price}! Added to your collection.`
         );
@@ -180,8 +212,10 @@ export default function CardDetailPage() {
 
   const handleOpenTradeModal = async () => {
     if (!currentUser) {
-      alert('Please login to offer trades!');
-      router.push('/login');
+      const confirmLogin = window.confirm(language === 'ja' ? 'トレードを提案するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para oferecer trocas! Deseja ir para a tela de login?' : 'Please login to offer trades! Go to login page?');
+      if (confirmLogin) {
+        router.push('/login');
+      }
       return;
     }
 
@@ -233,7 +267,7 @@ export default function CardDetailPage() {
   const handleOfferTradeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedListing || !currentUser || selectedMyCardIds.length === 0) {
-      setTradeError('Please select a target duelist listing and at least one card to offer.');
+      setTradeError(t('cd_modal_trade_select_err'));
       return;
     }
 
@@ -251,12 +285,12 @@ export default function CardDetailPage() {
       });
 
       if (res.ok) {
-        setTradeSuccess('Trade proposal sent successfully! The duelist will review your offer.');
+        setTradeSuccess(t('cd_modal_trade_success'));
         setTimeout(() => {
           setShowTradeModal(false);
         }, 2000);
       } else {
-        setTradeError('Failed to send trade proposal.');
+        setTradeError(t('cd_modal_trade_fail'));
       }
     } catch (err) {
       console.error('Error submitting trade:', err);
@@ -312,7 +346,11 @@ export default function CardDetailPage() {
           <div className={styles.badges}>
             <span className={styles.badge}>{card.type}</span>
             {card.attribute && <span className={styles.badge}>{card.attribute}</span>}
-            {card.level > 0 && <span className={styles.badge}>Level {card.level}</span>}
+            {card.race && <span className={styles.badge}>{card.race}</span>}
+            {card.archetype && <span className={styles.badge}>{card.archetype}</span>}
+            {card.level && card.level > 0 && <span className={styles.badge}>Level {card.level}</span>}
+            {card.linkval && card.linkval > 0 && <span className={styles.badge}>Link {card.linkval}</span>}
+            {card.scale && card.scale > 0 && <span className={styles.badge}>Scale {card.scale}</span>}
           </div>
           
           <div className={styles.statsRow}>
@@ -327,7 +365,7 @@ export default function CardDetailPage() {
 
           <div className={styles.tradingSection}>
             <button 
-              className={styles.addInventoryBtn} 
+              className="btn-primary" 
               onClick={handleOpenAddInventoryModal}
               style={{ marginRight: 'auto' }}
             >
@@ -353,11 +391,11 @@ export default function CardDetailPage() {
             <h2>{t('cd_modal_title')} {getCardName(card)}</h2>
 
             {modalLoading ? (
-              <p>Searching marketplace for duelists offering this card...</p>
+              <p>{t('cd_modal_searching')}</p>
             ) : availableListings.length === 0 ? (
               <div>
-                <p style={{ color: 'var(--text-secondary)' }}>No duelists currently have this card listed for trade in the marketplace.</p>
-                <button type="button" onClick={() => setShowTradeModal(false)} className="btn-primary" style={{ marginTop: '1rem' }}>Close</button>
+                <p style={{ color: 'var(--text-secondary)' }}>{t('cd_modal_no_duelists')}</p>
+                <button type="button" onClick={() => setShowTradeModal(false)} className="btn-primary" style={{ marginTop: '1rem' }}>{t('cancel')}</button>
               </div>
             ) : (
               <form onSubmit={handleOfferTradeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -417,13 +455,13 @@ export default function CardDetailPage() {
                         </div>
                       );
                     })}
-                    {myCards.length === 0 && <p>You do not have any cards available for trade or sale in your inventory. Add cards in your Profile first!</p>}
+                    {myCards.length === 0 && <p>{t('cd_modal_no_inventory')}</p>}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
-                  <button type="submit" disabled={selectedMyCardIds.length === 0} className="btn-primary">Send Trade Offer</button>
+                  <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{t('cancel')}</button>
+                  <button type="submit" disabled={selectedMyCardIds.length === 0} className="btn-primary">{t('cd_modal_send_btn')}</button>
                 </div>
               </form>
             )}
@@ -461,9 +499,24 @@ export default function CardDetailPage() {
                   onChange={(e) => setAddStatus(e.target.value)} 
                   style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
                 >
-                  <option value="COLLECTION">Collection</option>
-                  <option value="FOR_SALE">For Sale</option>
-                  <option value="FOR_TRADE">For Trade</option>
+                  <option value="COLLECTION">{t('prof_collection')}</option>
+                  <option value="FOR_SALE">{t('for_sale')}</option>
+                  <option value="FOR_TRADE">{t('for_trade')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{language === 'ja' ? 'カードの状態' : language === 'pt' ? 'Condição Física da Carta' : 'Physical Condition'}</label>
+                <select 
+                  value={addCondition} 
+                  onChange={(e) => setAddCondition(e.target.value)} 
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
+                >
+                  {conditions.map(c => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} - {language === 'ja' ? c.nameJa : language === 'pt' ? c.namePt : c.nameEn}
+                    </option>
+                  ))}
                 </select>
               </div>
 

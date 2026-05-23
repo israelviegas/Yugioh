@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './Navbar.module.css';
 
@@ -10,6 +10,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [theme, setTheme] = useState('dark');
   const pathname = usePathname();
+  const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
 
   const checkAuth = () => {
@@ -62,6 +63,7 @@ export default function Navbar() {
       localStorage.removeItem('yugioh_token');
       setUser(null);
       window.dispatchEvent(new Event('auth_change'));
+      router.push('/');
     }
   };
 
@@ -73,7 +75,6 @@ export default function Navbar() {
         </Link>
         <div className={styles.links}>
           <Link href="/cards" className={`${styles.link} ${pathname.startsWith('/cards') ? styles.activeLink : ''}`}>{t('nav_cards')}</Link>
-          <Link href="/marketplace" className={`${styles.link} ${pathname.startsWith('/marketplace') ? styles.activeLink : ''}`}>{t('nav_market')}</Link>
           <Link href="/strategies" className={`${styles.link} ${pathname.startsWith('/strategies') ? styles.activeLink : ''}`}>{t('nav_strategies')}</Link>
           {user && (
             <Link href="/profile" className={`${styles.link} ${pathname.startsWith('/profile') ? styles.activeLink : ''}`}>{t('nav_inventory')}</Link>

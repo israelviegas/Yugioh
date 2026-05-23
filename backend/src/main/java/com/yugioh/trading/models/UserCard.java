@@ -23,4 +23,8 @@ public class UserCard {
     private String status;
 
     private Double price;
+
+    @ManyToOne
+    @JoinColumn(name = "condition_code")
+    private CardCondition condition;
 }

@@ -26,62 +26,114 @@ interface Card {
   imageUrlJa?: string;
 }
 
+interface UserCard {
+  id: number;
+  user: { id: number; username: string };
+  card: Card;
+  status: string;
+  price: number;
+  condition?: {
+    code: string;
+    nameEn: string;
+    namePt: string;
+    nameJa: string;
+  };
+}
+
 export default function CardsPage() {
   const router = useRouter();
-  const { t, language } = useLanguage();
+  const { t, language, formatPrice } = useLanguage();
+  
+  // Base Catalog States
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Market & Filter States
+  const [filterStatus, setFilterStatus] = useState('ALL_CARDS');
+  const [marketCards, setMarketCards] = useState<UserCard[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // Trade Modal States
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [targetCard, setTargetCard] = useState<UserCard | null>(null);
+  const [myCards, setMyCards] = useState<UserCard[]>([]);
+  const [selectedMyCardIds, setSelectedMyCardIds] = useState<number[]>([]);
+  const [tradeSuccess, setTradeSuccess] = useState('');
+  const [tradeError, setTradeError] = useState('');
 
-  // Debounce search term to prevent excessive API requests
+  // Initial user setup
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('yugioh_user');
+      if (stored) {
+        setCurrentUser(JSON.parse(stored));
+      }
+    }
+  }, []);
+
+  // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);
       setCurrentPage(1); // reset to page 1 on new search
     }, 450);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch paginated cards from the backend
+  // Data Fetching logic
   useEffect(() => {
     setLoading(true);
-    // Page starts at 0 in backend, but 1 in frontend
-    const pageParam = currentPage - 1;
-    const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
     
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data === 'object' && 'content' in data) {
-          setCards(Array.isArray(data.content) ? data.content : []);
-          setTotalPages(data.totalPages || 1);
-        } else {
-          // Fallback if raw list is returned
-          const cardsList = Array.isArray(data) ? data : [];
-          setCards(cardsList);
+    if (filterStatus === 'ALL_CARDS') {
+      // Fetch base catalog cards
+      const pageParam = currentPage - 1;
+      const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
+      
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && typeof data === 'object' && 'content' in data) {
+            setCards(Array.isArray(data.content) ? data.content : []);
+            setTotalPages(data.totalPages || 1);
+          } else {
+            const cardsList = Array.isArray(data) ? data : [];
+            setCards(cardsList);
+            setTotalPages(1);
+          }
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error('Error fetching cards:', err);
+          setCards([]);
           setTotalPages(1);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Error fetching cards:', err);
-        setCards([]);
-        setTotalPages(1);
-        setLoading(false);
-      });
-  }, [currentPage, itemsPerPage, debouncedSearch]);
+          setLoading(false);
+        });
+    } else {
+      // Fetch market cards
+      fetch(`${getApiUrl()}/api/user-cards/market`)
+        .then(res => res.json())
+        .then(data => {
+          setMarketCards(Array.isArray(data) ? data : []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching market cards:', err);
+          setMarketCards([]);
+          setLoading(false);
+        });
+    }
+  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus]);
 
-  // Reset page when items per page changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage]);
+  }, [itemsPerPage, filterStatus]);
 
   const getCardName = (card: Card) => {
     if (language === 'pt') return card.namePt || card.name;
@@ -95,7 +147,154 @@ export default function CardsPage() {
     return card.imageUrl;
   };
 
-  const paginatedCards = cards;
+  // Processing Market Cards
+  let processedMarketCards: UserCard[] = [];
+  if (filterStatus !== 'ALL_CARDS') {
+    processedMarketCards = marketCards.filter(uc => {
+      // Status filtering
+      let matchesStatus = true;
+      if (filterStatus === 'FOR_SALE') matchesStatus = uc.status === 'FOR_SALE';
+      if (filterStatus === 'FOR_TRADE') matchesStatus = uc.status === 'FOR_TRADE';
+      
+      // User filtering
+      let matchesUser = true;
+      if (filterStatus === 'MY_LISTINGS') {
+        matchesUser = currentUser && uc.user.id === currentUser.id;
+      }
+      
+      // Search term
+      const matchesSearch = getCardName(uc.card).toLowerCase().includes(debouncedSearch.toLowerCase());
+      
+      return matchesStatus && matchesUser && matchesSearch;
+    });
+  }
+
+  useEffect(() => {
+    if (filterStatus !== 'ALL_CARDS') {
+      setTotalPages(Math.max(1, Math.ceil(processedMarketCards.length / itemsPerPage)));
+    }
+  }, [processedMarketCards.length, itemsPerPage, filterStatus]);
+
+  // The final cards array to render for current page
+  const itemsToRender = filterStatus === 'ALL_CARDS' 
+    ? cards 
+    : processedMarketCards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Market Handlers
+  const handleBuyNow = async (uc: UserCard) => {
+    if (!currentUser) {
+      const confirmLogin = window.confirm(language === 'ja' ? 'カードを購入するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para comprar cartas! Deseja ir para a tela de login?' : 'Please login to buy cards! Go to login page?');
+      if (confirmLogin) router.push('/login');
+      return;
+    }
+
+    if (uc.user.id === currentUser.id) {
+      alert(language === 'ja' ? '自分のカードは購入できません！' : language === 'pt' ? 'Você não pode comprar sua própria carta!' : 'You cannot buy your own card!');
+      return;
+    }
+
+    const confirmMsg = language === 'ja'
+      ? `このカードを ${uc.user.username} から ${formatPrice(uc.price)} で購入しますか？`
+      : language === 'pt'
+      ? `Deseja comprar esta carta de ${uc.user.username} por ${formatPrice(uc.price)}?`
+      : `Do you want to buy this card from ${uc.user.username} for ${formatPrice(uc.price)}?`;
+      
+    const confirmBuy = window.confirm(confirmMsg);
+    if (!confirmBuy) return;
+
+    try {
+      const res = await fetch(`${getApiUrl()}/api/user-cards/${uc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COLLECTION' })
+      });
+      if (res.ok) {
+        alert(
+          language === 'ja'
+            ? `${getCardName(uc.card)} を ${formatPrice(uc.price)} で購入しました！コレクションに追加されました。`
+            : language === 'pt'
+            ? `Comprado com sucesso "${getCardName(uc.card)}" por ${formatPrice(uc.price)}! Adicionado à sua coleção.`
+            : `Successfully purchased "${getCardName(uc.card)}" for ${formatPrice(uc.price)}! Added to your collection.`
+        );
+        // Refresh
+        setLoading(true);
+        fetch(`${getApiUrl()}/api/user-cards/market`)
+          .then(r => r.json())
+          .then(d => { setMarketCards(Array.isArray(d) ? d : []); setLoading(false); })
+          .catch(() => setLoading(false));
+      }
+    } catch (err) {
+      console.error('Error buying card:', err);
+    }
+  };
+
+  const handleOpenTradeModal = async (uc: UserCard) => {
+    if (!currentUser) {
+      const confirmLogin = window.confirm(language === 'ja' ? 'トレードを提案するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para oferecer trocas! Deseja ir para a tela de login?' : 'Please login to offer trades! Go to login page?');
+      if (confirmLogin) router.push('/login');
+      return;
+    }
+
+    if (uc.user.id === currentUser.id) {
+      alert(language === 'ja' ? '自分とトレードすることはできません！' : language === 'pt' ? 'Você não pode trocar com você mesmo!' : 'You cannot trade with yourself!');
+      return;
+    }
+
+    setTargetCard(uc);
+    setSelectedMyCardIds([]);
+    setTradeSuccess('');
+    setTradeError('');
+
+    try {
+      const res = await fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`);
+      const data = await res.json();
+      setMyCards(Array.isArray(data) ? data.filter((c: UserCard) => c.status !== 'COLLECTION') : []);
+      setShowTradeModal(true);
+    } catch (err) {
+      console.error('Error fetching my cards for trade:', err);
+      setMyCards([]);
+    }
+  };
+
+  const handleToggleSelectMyCard = (id: number) => {
+    if (selectedMyCardIds.includes(id)) {
+      setSelectedMyCardIds(selectedMyCardIds.filter(item => item !== id));
+    } else {
+      setSelectedMyCardIds([...selectedMyCardIds, id]);
+    }
+  };
+
+  const handleOfferTradeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetCard || !currentUser || selectedMyCardIds.length === 0) {
+      setTradeError(t('cd_modal_trade_select_err'));
+      return;
+    }
+
+    setTradeError('');
+    try {
+      const res = await fetch(`${getApiUrl()}/api/trades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: currentUser.id,
+          receiverId: targetCard.user.id,
+          offeredCardIds: selectedMyCardIds,
+          requestedCardIds: [targetCard.id]
+        })
+      });
+
+      if (res.ok) {
+        setTradeSuccess(t('cd_modal_trade_success'));
+        setTimeout(() => setShowTradeModal(false), 2000);
+      } else {
+        setTradeError(t('cd_modal_trade_fail'));
+      }
+    } catch (err) {
+      console.error('Error submitting trade:', err);
+      setTradeError(language === 'ja' ? 'エラーが発生しました。' : language === 'pt' ? 'Ocorreu um erro.' : 'An error occurred.');
+    }
+  };
 
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -169,6 +368,19 @@ export default function CardsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            
+            <select 
+              className={styles.filterSelect}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="ALL_CARDS">{t('filter_all_cards')}</option>
+              <option value="ALL_MARKET">{t('filter_all_market')}</option>
+              <option value="FOR_SALE">{t('filter_for_sale')}</option>
+              <option value="FOR_TRADE">{t('filter_for_trade')}</option>
+              {currentUser && <option value="MY_LISTINGS">{t('filter_my_listings')}</option>}
+            </select>
+
             <div className={styles.itemsPerPageContainer}>
               <span>{t('cards_per_page')}</span>
               <select 
@@ -191,38 +403,94 @@ export default function CardsPage() {
       ) : (
         <>
           <div className={styles.grid}>
-            {paginatedCards.map(card => (
-              <TiltCardWrapper 
-                key={card.id} 
-                className={`${styles.card} glass-panel`}
-                onClick={() => router.push(`/cards/${card.id}`)}
-              >
-                <div className={styles.imageContainer}>
-                  {card.imageUrl ? (
-                    <img 
-                      src={getCardImage(card)} 
-                      alt={getCardName(card)} 
-                      className={styles.image} 
-                      onError={(e) => { 
-                        if (e.currentTarget.src !== card.imageUrl) {
-                          e.currentTarget.src = card.imageUrl; 
-                        }
-                      }} 
-                    />
-                  ) : (
-                    <div className={styles.imagePlaceholder}>{t('no_image')}</div>
-                  )}
-                </div>
-                <div className={styles.cardInfo}>
-                  <h3 className={styles.cardName}>{getCardName(card)}</h3>
-                  <p className={styles.cardType}>{card.type}</p>
-                  <div className={styles.stats}>
-                    {card.attack !== null && <span>ATK: {card.attack}</span>}
-                    {card.defense !== null && <span>DEF: {card.defense}</span>}
+            {itemsToRender.map((item: any) => {
+              const isMarketCard = filterStatus !== 'ALL_CARDS';
+              const cardData = isMarketCard ? item.card : item;
+              const isOwner = isMarketCard && currentUser && item.user.id === currentUser.id;
+
+              return (
+                <TiltCardWrapper 
+                  key={isMarketCard ? `uc-${item.id}` : `c-${cardData.id}`} 
+                  className={`${styles.card} glass-panel`}
+                  onClick={() => router.push(`/cards/${cardData.id}`)}
+                >
+                  <div className={styles.imageContainer}>
+                    {cardData.imageUrl ? (
+                      <img 
+                        src={getCardImage(cardData)} 
+                        alt={getCardName(cardData)} 
+                        className={styles.image} 
+                        onError={(e) => { 
+                          if (e.currentTarget.src !== cardData.imageUrl) {
+                            e.currentTarget.src = cardData.imageUrl; 
+                          }
+                        }} 
+                      />
+                    ) : (
+                      <div className={styles.imagePlaceholder}>{t('no_image')}</div>
+                    )}
                   </div>
-                </div>
-              </TiltCardWrapper>
-            ))}
+                  
+                  <div className={styles.cardInfo}>
+                    <h3 className={styles.cardName}>{getCardName(cardData)}</h3>
+                    
+                    {isMarketCard ? (
+                      <>
+                        <div className={styles.owner}>{t('listed_by')} <strong>{item.user?.username}</strong></div>
+                        {item.condition && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                            {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
+                            <strong>{language === 'ja' ? item.condition.nameJa : language === 'pt' ? item.condition.namePt : item.condition.nameEn} ({item.condition.code})</strong>
+                          </div>
+                        )}
+                        <span className={`${styles.statusBadge} ${item.status === 'FOR_SALE' ? styles.statusSale : styles.statusTrade}`}>
+                          {item.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
+                        </span>
+                        
+                        {item.status === 'FOR_SALE' && <div className={styles.price}>{formatPrice(item.price)}</div>}
+                        
+                        {!isOwner && (
+                          item.status === 'FOR_SALE' ? (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleBuyNow(item);
+                              }} 
+                              className={`btn-primary ${styles.actionBtn}`}
+                            >
+                              {t('buy_now')}
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenTradeModal(item);
+                              }} 
+                              className={`btn-primary ${styles.actionBtn}`}
+                            >
+                              {t('offer_trade')}
+                            </button>
+                          )
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className={styles.cardType}>{cardData.type}</p>
+                        <div className={styles.stats}>
+                          {cardData.attack !== null && <span>ATK: {cardData.attack}</span>}
+                          {cardData.defense !== null && <span>DEF: {cardData.defense}</span>}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </TiltCardWrapper>
+              );
+            })}
+            {itemsToRender.length === 0 && (
+              <p style={{ gridColumn: '1/-1', textAlign: 'center' }}>
+                {filterStatus !== 'ALL_CARDS' ? t('no_market_match') : 'No cards found.'}
+              </p>
+            )}
           </div>
 
           {totalPages > 1 && (
@@ -249,6 +517,64 @@ export default function CardsPage() {
             </div>
           )}
         </>
+      )}
+
+      {showTradeModal && targetCard && (
+        <div style={{ position: 'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.8)', backdropFilter:'blur(5px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000 }}>
+          <div className="glass-panel" style={{ width:'100%', maxWidth:'600px', padding:'2.5rem', display:'flex', flexDirection:'column', gap:'1.5rem', maxHeight:'90vh', overflowY:'auto' }}>
+            <h2>{t('cd_modal_title')} {targetCard.user.username}</h2>
+            <p>{language === 'ja' ? '希望カード:' : language === 'pt' ? 'Você está solicitando:' : 'You are requesting:'} <strong>{getCardName(targetCard.card)}</strong></p>
+
+            {tradeSuccess && <div style={{ color: '#4aff80', background: 'rgba(74, 255, 128, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(74, 255, 128, 0.3)' }}>{tradeSuccess}</div>}
+            {tradeError && <div style={{ color: '#ff4a4a', background: 'rgba(255, 74, 74, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255, 74, 74, 0.3)' }}>{tradeError}</div>}
+
+            <div>
+              <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>{t('cd_modal_select_inventory')}</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                {myCards.map(myCard => {
+                  const isSelected = selectedMyCardIds.includes(myCard.id);
+                  return (
+                    <div 
+                      key={myCard.id} 
+                      onClick={() => handleToggleSelectMyCard(myCard.id)}
+                      style={{ 
+                        border: isSelected ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)', 
+                        background: isSelected ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.3)',
+                        padding: '0.8rem', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <img 
+                        src={getCardImage(myCard.card)} 
+                        alt="" 
+                        style={{ width: '80px', height: '115px', objectFit: 'cover', borderRadius: '4px' }} 
+                        onError={(e) => { 
+                          if (e.currentTarget.src !== myCard.card.imageUrl) {
+                            e.currentTarget.src = myCard.card.imageUrl; 
+                          }
+                        }} 
+                      />
+                      <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{getCardName(myCard.card)}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({myCard.status})</span>
+                    </div>
+                  );
+                })}
+                {myCards.length === 0 && <p>{t('cd_modal_no_inventory')}</p>}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{t('cancel')}</button>
+              <button type="button" onClick={handleOfferTradeSubmit} disabled={selectedMyCardIds.length === 0} className="btn-primary">{t('cd_modal_send_btn')}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

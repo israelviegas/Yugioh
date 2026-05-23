@@ -13,4 +13,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
            "LOWER(c.namePt) LIKE LOWER(:query) OR " +
            "LOWER(c.nameJa) LIKE LOWER(:query)")
     Page<Card> searchCards(@Param("query") String query, Pageable pageable);
+
+    @Query("SELECT c.id FROM Card c")
+    java.util.List<Long> findAllIds();
 }

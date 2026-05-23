@@ -23,6 +23,12 @@ interface UserCard {
   card: Card;
   status: string;
   price: number;
+  condition?: {
+    code: string;
+    nameEn: string;
+    namePt: string;
+    nameJa: string;
+  };
 }
 
 interface Trade {
@@ -42,6 +48,7 @@ export default function ProfilePage() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [activeTab, setActiveTab] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [conditions, setConditions] = useState<any[]>([]);
   // Controla o preço digitado localmente — só salva no servidor ao sair do campo
   const [editingPrices, setEditingPrices] = useState<Record<number, string>>({});
 
@@ -54,6 +61,12 @@ export default function ProfilePage() {
   const [suggestions, setSuggestions] = useState<Card[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+
+  // Edit Profile Modal
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -71,12 +84,17 @@ export default function ProfilePage() {
   const fetchData = async (userId: number) => {
     setLoading(true);
     try {
-      const [cardsRes, tradesRes] = await Promise.all([
+      const [cardsRes, tradesRes, conditionsRes] = await Promise.all([
         fetch(`${getApiUrl()}/api/users/${userId}/cards`),
-        fetch(`${getApiUrl()}/api/trades/user/${userId}`)
+        fetch(`${getApiUrl()}/api/trades/user/${userId}`),
+        fetch(`${getApiUrl()}/api/conditions`)
       ]);
       const cardsData = await cardsRes.json();
       const tradesData = await tradesRes.json();
+      if (conditionsRes.ok) {
+        const condData = await conditionsRes.json();
+        setConditions(Array.isArray(condData) ? condData : []);
+      }
       setUserCards(Array.isArray(cardsData) ? cardsData : []);
       setTrades(Array.isArray(tradesData) ? tradesData : []);
     } catch (err) {
@@ -89,13 +107,41 @@ export default function ProfilePage() {
   };
 
   const handleOpenAddModal = () => {
-    setSearchText('');
-    setSuggestions([]);
-    setSelectedCardId('');
-    setSelectedCard(null);
-    setNewStatus('COLLECTION');
-    setNewPrice(0);
-    setShowAddModal(true);
+    router.push('/cards');
+  };
+
+  const handleOpenEditProfile = () => {
+    setEditUsername(user.username);
+    setEditEmail(user.email);
+    setEditPassword('');
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${getApiUrl()}/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: editUsername,
+          email: editEmail,
+          password: editPassword || undefined
+        })
+      });
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        localStorage.setItem('yugioh_user', JSON.stringify(updatedUser));
+        setShowEditProfileModal(false);
+        alert(t('prof_edit_success'));
+      } else {
+        alert(t('prof_edit_error'));
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert(t('prof_edit_error'));
+    }
   };
 
   // Dynamic autocomplete search for the Add to Inventory modal
@@ -151,12 +197,16 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateCard = async (id: number, status: string, price: number) => {
+  const handleUpdateCard = async (id: number, status: string, price: number, conditionCode?: string) => {
     try {
+      const bodyPayload: any = { status, price };
+      if (conditionCode) {
+        bodyPayload.conditionCode = conditionCode;
+      }
       const res = await fetch(`${getApiUrl()}/api/user-cards/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, price })
+        body: JSON.stringify(bodyPayload)
       });
       if (res.ok) {
         fetchData(user.id);
@@ -176,6 +226,23 @@ export default function ProfilePage() {
       }
     } catch (err) {
       console.error('Error deleting card:', err);
+    }
+  };
+
+  const handleSyncCards = async () => {
+    if (!confirm(t('prof_sync_confirm'))) return;
+    try {
+      const res = await fetch(`${getApiUrl()}/api/admin/sync-cards`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        alert(t('prof_sync_success'));
+      } else {
+        alert(t('prof_sync_error'));
+      }
+    } catch (err) {
+      console.error('Error syncing cards:', err);
+      alert(t('prof_sync_comm_error'));
     }
   };
 
@@ -218,12 +285,24 @@ export default function ProfilePage() {
     <div className="page-container">
       <div className={styles.header}>
         <div className={styles.userInfo}>
-          <h1 className={styles.username}>{user.username}</h1>
+          <h1 className={styles.username}>
+            {user.username}
+            <button onClick={handleOpenEditProfile} style={{ marginLeft: '1rem', fontSize: '0.9rem', padding: '0.3rem 0.6rem', background: 'transparent', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold)', borderRadius: '4px', cursor: 'pointer' }}>
+              {t('prof_edit_profile')}
+            </button>
+          </h1>
           <span className={styles.email}>{user.email}</span>
         </div>
-        <button onClick={handleOpenAddModal} className={`btn-primary ${styles.addCardBtn}`}>
-          {t('prof_add_btn')}
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          {user.role === 'ADMIN' && (
+            <button onClick={handleSyncCards} className={`btn-primary ${styles.addCardBtn}`}>
+              {t('prof_sync_api')}
+            </button>
+          )}
+          <button onClick={handleOpenAddModal} className={`btn-primary ${styles.addCardBtn}`}>
+            {t('prof_add_btn')}
+          </button>
+        </div>
       </div>
 
       <div className={styles.grid}>
@@ -372,12 +451,24 @@ export default function ProfilePage() {
                     <div className={styles.cardActions}>
                       <select 
                         value={uc.status} 
-                        onChange={(e) => handleUpdateCard(uc.id, e.target.value, uc.price)}
+                        onChange={(e) => handleUpdateCard(uc.id, e.target.value, uc.price, uc.condition?.code)}
                         className={styles.actionSelect}
                       >
-                        <option value="COLLECTION">Collection</option>
-                        <option value="FOR_SALE">For Sale</option>
-                        <option value="FOR_TRADE">For Trade</option>
+                        <option value="COLLECTION">{t('prof_collection')}</option>
+                        <option value="FOR_SALE">{t('for_sale')}</option>
+                        <option value="FOR_TRADE">{t('for_trade')}</option>
+                      </select>
+
+                      <select 
+                        value={uc.condition?.code || 'NM'} 
+                        onChange={(e) => handleUpdateCard(uc.id, uc.status, uc.price, e.target.value)}
+                        className={styles.actionSelect}
+                      >
+                        {conditions.map(c => (
+                          <option key={c.code} value={c.code}>
+                            {c.code} - {language === 'ja' ? c.nameJa : language === 'pt' ? c.namePt : c.nameEn}
+                          </option>
+                        ))}
                       </select>
 
                       {uc.status === 'FOR_SALE' && (
@@ -389,12 +480,12 @@ export default function ProfilePage() {
                           }
                           onBlur={() => {
                             const val = Number(editingPrices[uc.id] ?? uc.price);
-                            handleUpdateCard(uc.id, uc.status, val);
+                            handleUpdateCard(uc.id, uc.status, val, uc.condition?.code);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               const val = Number(editingPrices[uc.id] ?? uc.price);
-                              handleUpdateCard(uc.id, uc.status, val);
+                              handleUpdateCard(uc.id, uc.status, val, uc.condition?.code);
                               (e.target as HTMLInputElement).blur();
                             }
                           }}
@@ -416,102 +507,49 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {showAddModal && (
+
+
+      {showEditProfileModal && (
         <div className={styles.modalOverlay}>
           <div className={`${styles.modalContent} glass-panel`}>
-            <h2 className={styles.modalTitle}>{t('prof_modal_add_title')}</h2>
-            <form onSubmit={handleAddCard} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              <div style={{ position: 'relative' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_modal_select')}</label>
+            <h2 className={styles.modalTitle}>{t('prof_edit_modal_title')}</h2>
+            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_edit_username')}</label>
                 <input
                   type="text"
-                  placeholder="Pesquise o nome da carta..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
                   className={styles.modalSelect}
                   style={{ width: '100%' }}
                   required
                 />
-                
-                {isSearching && (
-                  <div style={{ position: 'absolute', right: '12px', top: '42px', color: 'var(--accent-gold)', fontSize: '0.85rem' }}>
-                    Carregando...
-                  </div>
-                )}
-
-                {suggestions.length > 0 && (
-                  <ul className={styles.suggestionsList}>
-                    {suggestions.map((c) => (
-                      <li
-                        key={c.id}
-                        onClick={() => {
-                          setSelectedCardId(c.id);
-                          setSelectedCard(c);
-                          setSearchText(getCardName(c));
-                          setSuggestions([]);
-                        }}
-                        className={styles.suggestionItem}
-                      >
-                        {getCardName(c)} ({c.type})
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
-
-              {selectedCard && (
-                <div className={styles.selectedCardPreview}>
-                  <img
-                    src={getCardImage(selectedCard)}
-                    alt={getCardName(selectedCard)}
-                    className={styles.previewImage}
-                    onError={(e) => {
-                      if (e.currentTarget.src !== selectedCard.imageUrl) {
-                        e.currentTarget.src = selectedCard.imageUrl;
-                      }
-                    }}
-                  />
-                  <div>
-                    <h4 style={{ color: 'var(--accent-gold)', margin: '0 0 0.2rem 0' }}>{getCardName(selectedCard)}</h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>{selectedCard.type}</p>
-                    {selectedCard.attack !== null && (
-                      <p style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0', color: '#fff' }}>
-                        ATK: {selectedCard.attack} | DEF: {selectedCard.defense}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_modal_status')}</label>
-                <select 
-                  value={newStatus} 
-                  onChange={(e) => setNewStatus(e.target.value)} 
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_edit_email')}</label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
                   className={styles.modalSelect}
-                >
-                  <option value="COLLECTION">Collection</option>
-                  <option value="FOR_SALE">For Sale</option>
-                  <option value="FOR_TRADE">For Trade</option>
-                </select>
+                  style={{ width: '100%' }}
+                  required
+                />
               </div>
-
-              {newStatus === 'FOR_SALE' && (
-                <div>
-                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_modal_price').replace('($)', `(${currencySymbol})`)}</label>
-                  <input 
-                    type="number" 
-                    value={newPrice} 
-                    onChange={(e) => setNewPrice(Number(e.target.value))}
-                    className={styles.modalSelect}
-                    required
-                  />
-                </div>
-              )}
-
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>{t('prof_edit_password')}</label>
+                <input
+                  type="password"
+                  placeholder={t('prof_edit_password_ph')}
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className={styles.modalSelect}
+                  style={{ width: '100%' }}
+                />
+              </div>
               <div className={styles.modalActions}>
-                <button type="button" onClick={() => setShowAddModal(false)} className={styles.cancelBtn}>{t('cancel')}</button>
-                <button type="submit" className="btn-primary">{t('prof_modal_add_btn')}</button>
+                <button type="button" onClick={() => setShowEditProfileModal(false)} className={styles.cancelBtn}>{t('cancel')}</button>
+                <button type="submit" className="btn-primary">{t('prof_edit_save')}</button>
               </div>
             </form>
           </div>

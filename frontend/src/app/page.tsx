@@ -19,9 +19,6 @@ export default function Home() {
           <Link href="/cards" className={`btn-primary ${styles.btnLarge}`}>
             {t('home_cta_explore')}
           </Link>
-          <Link href="/marketplace" className={`glass-panel ${styles.btnSecondary}`}>
-            {t('home_cta_market')}
-          </Link>
         </div>
       </div>
     </div>

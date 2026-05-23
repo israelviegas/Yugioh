@@ -2,10 +2,42 @@ yugi@kaibacorp.com
 Senha: heartofthecards
 
 
+Admin
+usuário: israel.viegas@gmail.com
+Senha: viegas
+
+
 Banco Postgree
 Nome do banco: yugiohdb
 usuario: postgres
 Senha: postgres
+
+
+ - Queries
+ 
+SELECT * FROM public.cards as c
+where c.translated_by_system  = true;
+
+
+SELECT * FROM public.cards as c
+where c.id  = 97045737;
+
+
+delete FROM public.cards ;
+
+
+SELECT count(*) FROM public.cards as c;
+
+
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'cards';
+
+
 
 Monte um prompt para a minha IA fazer essas alteracoes no sistema que ela desenvolveu em ntx.js + java com spring boot
 

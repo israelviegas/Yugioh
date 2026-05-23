@@ -50,7 +50,7 @@ export default function LoginPage() {
 
       setSuccess(isLogin ? 'Login successful! Summoning duelist...' : 'Registration successful! Summoning duelist...');
       setTimeout(() => {
-        router.push('/profile');
+        router.push('/cards');
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'An error occurred');

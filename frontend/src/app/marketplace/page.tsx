@@ -58,26 +58,41 @@ export default function MarketplacePage() {
 
   const handleBuyNow = async (uc: UserCard) => {
     if (!currentUser) {
-      alert('Please login to buy cards!');
-      router.push('/login');
+      const confirmLogin = window.confirm(language === 'ja' ? 'カードを購入するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para comprar cartas! Deseja ir para a tela de login?' : 'Please login to buy cards! Go to login page?');
+      if (confirmLogin) {
+        router.push('/login');
+      }
       return;
     }
 
     if (uc.user.id === currentUser.id) {
-      alert('You cannot buy your own card!');
+      alert(language === 'ja' ? '自分のカードは購入できません！' : language === 'pt' ? 'Você não pode comprar sua própria carta!' : 'You cannot buy your own card!');
       return;
     }
 
-    // Simulate purchase by changing ownership to current user and status to COLLECTION
+    const confirmMsg = language === 'ja'
+      ? `このカードを ${uc.user.username} から ${formatPrice(uc.price)} で購入しますか？`
+      : language === 'pt'
+      ? `Deseja comprar esta carta de ${uc.user.username} por ${formatPrice(uc.price)}?`
+      : `Do you want to buy this card from ${uc.user.username} for ${formatPrice(uc.price)}?`;
+      
+    const confirmBuy = window.confirm(confirmMsg);
+    if (!confirmBuy) return;
+
     try {
-      // First update status
       const res = await fetch(`${getApiUrl()}/api/user-cards/${uc.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'COLLECTION' })
       });
       if (res.ok) {
-        alert(`Successfully purchased ${uc.card.name} for $${uc.price}! Added to your collection.`);
+        alert(
+          language === 'ja'
+            ? `${getCardName(uc.card)} を ${formatPrice(uc.price)} で購入しました！コレクションに追加されました。`
+            : language === 'pt'
+            ? `Comprado com sucesso "${getCardName(uc.card)}" por ${formatPrice(uc.price)}! Adicionado à sua coleção.`
+            : `Successfully purchased "${getCardName(uc.card)}" for ${formatPrice(uc.price)}! Added to your collection.`
+        );
         fetchMarketCards();
       }
     } catch (err) {
@@ -87,13 +102,15 @@ export default function MarketplacePage() {
 
   const handleOpenTradeModal = async (uc: UserCard) => {
     if (!currentUser) {
-      alert('Please login to offer trades!');
-      router.push('/login');
+      const confirmLogin = window.confirm(language === 'ja' ? 'トレードを提案するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para oferecer trocas! Deseja ir para a tela de login?' : 'Please login to offer trades! Go to login page?');
+      if (confirmLogin) {
+        router.push('/login');
+      }
       return;
     }
 
     if (uc.user.id === currentUser.id) {
-      alert('You cannot trade with yourself!');
+      alert(language === 'ja' ? '自分とトレードすることはできません！' : language === 'pt' ? 'Você não pode trocar com você mesmo!' : 'You cannot trade with yourself!');
       return;
     }
 
