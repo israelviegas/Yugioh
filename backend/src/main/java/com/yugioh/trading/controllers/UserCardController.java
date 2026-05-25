@@ -47,6 +47,9 @@ public class UserCardController {
         if (request.getConditionCode() != null) {
             conditionRepository.findById(request.getConditionCode()).ifPresent(userCard::setCondition);
         }
+        if (request.getRarity() != null) {
+            userCard.setRarity(request.getRarity());
+        }
 
         UserCard saved = userCardRepository.save(userCard);
         return ResponseEntity.ok(saved);
@@ -68,6 +71,9 @@ public class UserCardController {
         }
         if (request.getConditionCode() != null) {
             conditionRepository.findById(request.getConditionCode()).ifPresent(userCard::setCondition);
+        }
+        if (request.getRarity() != null) {
+            userCard.setRarity(request.getRarity());
         }
 
         UserCard updated = userCardRepository.save(userCard);
@@ -101,6 +107,7 @@ public class UserCardController {
         private String status;
         private Double price;
         private String conditionCode;
+        private String rarity;
 
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
@@ -112,12 +119,15 @@ public class UserCardController {
         public void setPrice(Double price) { this.price = price; }
         public String getConditionCode() { return conditionCode; }
         public void setConditionCode(String conditionCode) { this.conditionCode = conditionCode; }
+        public String getRarity() { return rarity; }
+        public void setRarity(String rarity) { this.rarity = rarity; }
     }
 
     static class UpdateUserCardRequest {
         private String status;
         private Double price;
         private String conditionCode;
+        private String rarity;
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
@@ -125,5 +135,7 @@ public class UserCardController {
         public void setPrice(Double price) { this.price = price; }
         public String getConditionCode() { return conditionCode; }
         public void setConditionCode(String conditionCode) { this.conditionCode = conditionCode; }
+        public String getRarity() { return rarity; }
+        public void setRarity(String rarity) { this.rarity = rarity; }
     }
 }

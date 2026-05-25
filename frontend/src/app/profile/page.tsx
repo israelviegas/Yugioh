@@ -16,6 +16,7 @@ interface Card {
   imageUrl: string;
   imageUrlPt?: string;
   imageUrlJa?: string;
+  cardSets?: any[];
 }
 
 interface UserCard {
@@ -29,6 +30,7 @@ interface UserCard {
     namePt: string;
     nameJa: string;
   };
+  rarity?: string;
 }
 
 interface Trade {
@@ -197,11 +199,14 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateCard = async (id: number, status: string, price: number, conditionCode?: string) => {
+  const handleUpdateCard = async (id: number, status: string, price: number, conditionCode?: string, rarity?: string) => {
     try {
       const bodyPayload: any = { status, price };
       if (conditionCode) {
         bodyPayload.conditionCode = conditionCode;
+      }
+      if (rarity) {
+        bodyPayload.rarity = rarity;
       }
       const res = await fetch(`${getApiUrl()}/api/user-cards/${id}`, {
         method: 'PUT',
@@ -430,7 +435,12 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div>
-              <h2 className={styles.sectionTitle}>{activeTab} Inventory</h2>
+              <h2 className={styles.sectionTitle}>
+                {activeTab === 'ALL' ? t('prof_all_cards') : 
+                 activeTab === 'COLLECTION' ? t('prof_collection') : 
+                 activeTab === 'FOR_SALE' ? t('for_sale') : 
+                 activeTab === 'FOR_TRADE' ? t('for_trade') : activeTab} - {t('prof_inventory_title')}
+              </h2>
               <div className={styles.cardsGrid}>
                 {filteredCards.map(uc => (
                   <div key={uc.id} className={`${styles.cardItem} glass-panel`}>
@@ -471,6 +481,19 @@ export default function ProfilePage() {
                         ))}
                       </select>
 
+                      {uc.card.cardSets && uc.card.cardSets.length > 0 && (
+                        <select 
+                          value={uc.rarity || ''} 
+                          onChange={(e) => handleUpdateCard(uc.id, uc.status, uc.price, uc.condition?.code, e.target.value)}
+                          className={styles.actionSelect}
+                        >
+                          <option value="">{language === 'ja' ? 'レアリティ' : language === 'pt' ? 'Raridade' : 'Rarity'}</option>
+                          {Array.from(new Set(uc.card.cardSets.map((cs: any) => cs.setRarity).filter(Boolean))).map(r => (
+                            <option key={r as string} value={r as string}>{r as string}</option>
+                          ))}
+                        </select>
+                      )}
+
                       {uc.status === 'FOR_SALE' && (
                         <input 
                           type="number"
@@ -480,12 +503,12 @@ export default function ProfilePage() {
                           }
                           onBlur={() => {
                             const val = Number(editingPrices[uc.id] ?? uc.price);
-                            handleUpdateCard(uc.id, uc.status, val, uc.condition?.code);
+                            handleUpdateCard(uc.id, uc.status, val, uc.condition?.code, uc.rarity);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               const val = Number(editingPrices[uc.id] ?? uc.price);
-                              handleUpdateCard(uc.id, uc.status, val, uc.condition?.code);
+                              handleUpdateCard(uc.id, uc.status, val, uc.condition?.code, uc.rarity);
                               (e.target as HTMLInputElement).blur();
                             }
                           }}
@@ -500,7 +523,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 ))}
-                {filteredCards.length === 0 && <p>No cards found in this section.</p>}
+                {filteredCards.length === 0 && <p>{t('prof_no_cards_found')}</p>}
               </div>
             </div>
           )}

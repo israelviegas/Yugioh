@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/config';
 import { useLanguage } from '@/context/LanguageContext';
+import TiltCardWrapper from '@/components/TiltCardWrapper';
+import cardStyles from '../Cards.module.css';
 import styles from './CardDetail.module.css';
 
 interface Card {
@@ -42,6 +44,7 @@ interface UserCard {
 export default function CardDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t, language } = useLanguage();
   const [card, setCard] = useState<Card | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,9 +65,12 @@ export default function CardDetailPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addStatus, setAddStatus] = useState('COLLECTION');
   const [addCondition, setAddCondition] = useState('NM');
+  const [addRarity, setAddRarity] = useState('Common');
   const [addPrice, setAddPrice] = useState<number>(0);
   const [addLoading, setAddLoading] = useState(false);
   const [conditions, setConditions] = useState<any[]>([]);
+
+  const uniqueRarities = Array.from(new Set((card?.cardSets || []).map((cs: any) => cs.setRarity).filter(Boolean)));
 
   const fetchConditions = async () => {
     try {
@@ -124,6 +130,7 @@ export default function CardDetailPage() {
     }
     setAddStatus('COLLECTION');
     setAddCondition('NM');
+    setAddRarity(uniqueRarities.length > 0 ? (uniqueRarities[0] as string) : 'Common');
     setAddPrice(0);
     setShowAddModal(true);
   };
@@ -141,6 +148,7 @@ export default function CardDetailPage() {
           cardId: card.id,
           status: addStatus,
           conditionCode: addCondition,
+          rarity: addRarity,
           price: Number(addPrice)
         })
       });
@@ -158,12 +166,7 @@ export default function CardDetailPage() {
       setAddLoading(false);
     }
   };
-
-  const handleOpenSaleAction = () => {
-    const saleListings = marketListings.filter(l => l.card.id === card?.id && l.status === 'FOR_SALE' && (!currentUser || l.user.id !== currentUser.id));
-    if (saleListings.length === 0) return;
-    const cheapest = saleListings.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
-    
+  const handleBuyCard = async (listing: UserCard) => {
     if (!currentUser) {
       const confirmLogin = window.confirm(language === 'ja' ? 'カードを購入するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para comprar cartas! Deseja ir para a tela de login?' : 'Please login to buy cards! Go to login page?');
       if (confirmLogin) {
@@ -171,21 +174,15 @@ export default function CardDetailPage() {
       }
       return;
     }
-    
-    const confirmMsg = language === 'ja'
-      ? `このカードを ${cheapest.user.username} から $${cheapest.price} で購入しますか？`
-      : language === 'pt'
-      ? `Deseja comprar esta carta de ${cheapest.user.username} por $${cheapest.price}?`
-      : `Do you want to buy this card from ${cheapest.user.username} for $${cheapest.price}?`;
-      
-    const confirmBuy = window.confirm(confirmMsg);
-    
-    if (confirmBuy) {
-      handleBuyCard(cheapest);
-    }
-  };
 
-  const handleBuyCard = async (listing: UserCard) => {
+    const confirmMsg = language === 'ja'
+      ? `このカードを ${listing.user.username} から $${listing.price} で購入しますか？`
+      : language === 'pt'
+      ? `Deseja comprar esta carta de ${listing.user.username} por $${listing.price}?`
+      : `Do you want to buy this card from ${listing.user.username} for $${listing.price}?`;
+      
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       const res = await fetch(`${getApiUrl()}/api/user-cards/${listing.id}`, {
         method: 'PUT',
@@ -210,7 +207,7 @@ export default function CardDetailPage() {
     }
   };
 
-  const handleOpenTradeModal = async () => {
+  const handleOpenTradeModalTarget = async (listing: UserCard) => {
     if (!currentUser) {
       const confirmLogin = window.confirm(language === 'ja' ? 'トレードを提案するにはログインしてください！ログイン画面へ移動しますか？' : language === 'pt' ? 'Por favor, faça login para oferecer trocas! Deseja ir para a tela de login?' : 'Please login to offer trades! Go to login page?');
       if (confirmLogin) {
@@ -223,30 +220,20 @@ export default function CardDetailPage() {
     setModalLoading(true);
     setTradeSuccess('');
     setTradeError('');
-    setSelectedListing(null);
+    setSelectedListing(listing);
     setSelectedMyCardIds([]);
 
     try {
-      const [marketRes, myCardsRes] = await Promise.all([
-        fetch(`${getApiUrl()}/api/user-cards/market`),
-        fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`)
-      ]);
-
-      const marketData = await marketRes.json();
+      const myCardsRes = await fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`);
       const myCardsData = await myCardsRes.json();
 
-      // Find listings of this card for trade by other users
-      const listings = marketData.filter((uc: UserCard) => 
+      const listings = marketListings.filter((uc: UserCard) => 
         uc.card.id === card?.id && 
         uc.user.id !== currentUser.id &&
         uc.status === 'FOR_TRADE'
       );
 
       setAvailableListings(listings);
-      if (listings.length > 0) {
-        setSelectedListing(listings[0]);
-      }
-
       setMyCards(myCardsData.filter((c: UserCard) => c.status !== 'COLLECTION'));
     } catch (err) {
       console.error('Error loading modal data:', err);
@@ -322,12 +309,36 @@ export default function CardDetailPage() {
   if (loading) return <div className={styles.loading}>{t('cd_loading')}</div>;
   if (!card) return <div className={styles.loading}>{t('cd_not_found')}</div>;
 
-  const otherListings = marketListings.filter(l => l.card.id === card.id && (!currentUser || l.user.id !== currentUser.id));
-  const hasTradeListings = otherListings.some(l => l.status === 'FOR_TRADE');
-  const hasSaleListings = otherListings.some(l => l.status === 'FOR_SALE');
+  const allOtherListings = marketListings
+    .filter(l => l.card.id === card.id && (!currentUser || l.user.id !== currentUser.id))
+    .sort((a, b) => a.price - b.price);
+  
+  const featuredListingId = searchParams.get('listing');
+  let featuredListing = null;
+  let otherListings = allOtherListings;
+
+  if (featuredListingId) {
+    const found = allOtherListings.find(l => l.id.toString() === featuredListingId);
+    if (found) {
+      featuredListing = found;
+      otherListings = allOtherListings.filter(l => l.id.toString() !== featuredListingId);
+    }
+  }
+
+  const hasTradeListings = allOtherListings.some(l => l.status === 'FOR_TRADE');
+  const hasSaleListings = allOtherListings.some(l => l.status === 'FOR_SALE');
 
   return (
-    <div className="page-container">
+    <div style={{ maxWidth: (otherListings.length > 0 || featuredListing) ? '1500px' : '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '2rem 2rem 0 2rem' }}>
+        <button className={styles.backButton} onClick={() => router.back()}>
+          ← {language === 'ja' ? '戻る' : language === 'pt' ? 'Voltar' : 'Back'}
+        </button>
+      </div>
+      <div 
+        className={`page-container ${styles.pageLayout} ${(otherListings.length > 0 || featuredListing) ? styles.pageLayoutWithSidebar : ''}`}
+        style={(otherListings.length > 0 || featuredListing) ? { maxWidth: '1500px', paddingTop: '1rem' } : { paddingTop: '1rem' }}
+      >
       <div className={`${styles.detailContainer} glass-panel`}>
         <div className={styles.imageSection}>
           <img 
@@ -363,27 +374,148 @@ export default function CardDetailPage() {
             <p>{getCardDesc(card)}</p>
           </div>
 
+          {card.cardSets && card.cardSets.length > 0 && (
+            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--accent-gold)' }}>
+                {language === 'ja' ? '収録セット' : language === 'pt' ? 'Coleções e Raridades' : 'Sets & Rarities'}
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                {card.cardSets.map((cs: any, idx: number) => (
+                  <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    {cs.setName && <div style={{ fontWeight: 'bold', marginBottom: '0.4rem', color: 'var(--text-primary)', fontSize: '0.9rem' }}>{cs.setName}</div>}
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{language === 'ja' ? 'コード: ' : language === 'pt' ? 'Código: ' : 'Set Code: '} <strong style={{ color: 'var(--text-primary)' }}>{cs.setCode}</strong></div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} <strong style={{ color: 'var(--accent-gold)' }}>{cs.setRarity}</strong> {cs.setRarityCode && `(${cs.setRarityCode})`}</div>
+                    {cs.setPrice && cs.setPrice !== '0.00' && cs.setPrice !== '0' && <div style={{ fontSize: '0.85rem', color: '#4aff80', marginTop: '0.3rem' }}>{language === 'ja' ? '参考価格: ' : language === 'pt' ? 'Preço Base: ' : 'Base Price: '} ${cs.setPrice}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className={styles.tradingSection}>
             <button 
               className="btn-primary" 
               onClick={handleOpenAddInventoryModal}
-              style={{ marginRight: 'auto' }}
             >
               {t('prof_add_btn')}
             </button>
-            {hasTradeListings && (
-              <button className="btn-primary" onClick={handleOpenTradeModal}>
-                {t('cd_trade_proposal')}
-              </button>
-            )}
-            {hasSaleListings && (
-              <button className="btn-primary" onClick={handleOpenSaleAction}>
-                {t('cd_sale_proposal')}
-              </button>
-            )}
           </div>
         </div>
       </div>
+
+      {(otherListings.length > 0 || featuredListing) && (
+        <div className={`${styles.sidebar} glass-panel`} style={{ gap: '1.5rem' }}>
+          {featuredListing && (
+            <div style={{ flexShrink: 0 }}>
+              <h2 style={{ color: 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.4rem' }}>
+                {language === 'ja' ? '選択した提案' : language === 'pt' ? 'Proposta Selecionada' : 'Selected Proposal'}
+              </h2>
+              <div className={`${styles.marketListingCard} glass-panel`} style={{ marginTop: '1rem', border: '1px solid var(--accent-gold)', background: 'rgba(212, 175, 55, 0.05)' }}>
+                <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
+                  <div className={cardStyles.owner} style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                    {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{featuredListing.user?.username}</span>
+                  </div>
+                  
+                  {featuredListing.condition && (
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                      {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
+                      <span style={{ color: 'var(--text-primary)' }}>{language === 'ja' ? featuredListing.condition.nameJa : language === 'pt' ? featuredListing.condition.namePt : featuredListing.condition.nameEn} ({featuredListing.condition.code})</span>
+                    </div>
+                  )}
+                  
+                  {featuredListing.rarity && (
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                      {language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} 
+                      <span style={{ color: 'var(--text-primary)' }}>{featuredListing.rarity}</span>
+                    </div>
+                  )}
+                  
+                  <span style={{ marginBottom: '0.5rem', alignSelf: 'flex-start' }} className={`${cardStyles.statusBadge} ${featuredListing.status === 'FOR_SALE' ? cardStyles.statusSale : cardStyles.statusTrade}`}>
+                    {featuredListing.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
+                  </span>
+                  
+                  {featuredListing.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>${featuredListing.price.toFixed(2)}</div>}
+                  
+                  {featuredListing.status === 'FOR_SALE' ? (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBuyCard(featuredListing); }} 
+                      className={`btn-primary ${cardStyles.actionBtn}`}
+                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                    >
+                      {t('buy_now')}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenTradeModalTarget(featuredListing); }} 
+                      className={`btn-primary ${cardStyles.actionBtn}`}
+                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                    >
+                      {t('cd_trade_proposal')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {otherListings.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
+              <h2 style={{ color: featuredListing ? 'var(--text-secondary)' : 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: '0 0 1rem 0', fontFamily: 'Cinzel, serif', fontSize: featuredListing ? '1.2rem' : '1.4rem', flexShrink: 0 }}>
+                {language === 'ja' ? (featuredListing ? 'その他の出品' : 'マーケット出品') : language === 'pt' ? (featuredListing ? 'Outros Anúncios' : 'Anúncios do Mercado') : (featuredListing ? 'Other Listings' : 'Market Listings')}
+              </h2>
+              <div className={styles.sidebarList}>
+            {otherListings.map(item => (
+              <div key={`uc-${item.id}`} className={`${styles.marketListingCard} glass-panel`}>
+                <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
+                  <div className={cardStyles.owner} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                    {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{item.user?.username}</span>
+                  </div>
+                  
+                  {item.condition && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                      {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
+                      <span style={{ color: 'var(--text-primary)' }}>{language === 'ja' ? item.condition.nameJa : language === 'pt' ? item.condition.namePt : item.condition.nameEn} ({item.condition.code})</span>
+                    </div>
+                  )}
+                  
+                  {item.rarity && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                      {language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} 
+                      <span style={{ color: 'var(--text-primary)' }}>{item.rarity}</span>
+                    </div>
+                  )}
+                  
+                  <span style={{ marginBottom: '0.5rem' }} className={`${cardStyles.statusBadge} ${item.status === 'FOR_SALE' ? cardStyles.statusSale : cardStyles.statusTrade}`}>
+                    {item.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
+                  </span>
+                  
+                  {item.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem' }}>${item.price.toFixed(2)}</div>}
+                  
+                  {item.status === 'FOR_SALE' ? (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBuyCard(item); }} 
+                      className={`btn-primary ${cardStyles.actionBtn}`}
+                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                    >
+                      {t('buy_now')}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenTradeModalTarget(item); }} 
+                      className={`btn-primary ${cardStyles.actionBtn}`}
+                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                    >
+                      {t('cd_trade_proposal')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+        </div>
+      )}
 
       {showTradeModal && (
         <div style={{ position: 'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.8)', backdropFilter:'blur(5px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000 }}>
@@ -520,6 +652,21 @@ export default function CardDetailPage() {
                 </select>
               </div>
 
+              {uniqueRarities.length > 0 && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{language === 'ja' ? 'レアリティ' : language === 'pt' ? 'Raridade' : 'Rarity'}</label>
+                  <select 
+                    value={addRarity} 
+                    onChange={(e) => setAddRarity(e.target.value)} 
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
+                  >
+                    {uniqueRarities.map(r => (
+                      <option key={r as string} value={r as string}>{r as string}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {addStatus === 'FOR_SALE' && (
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{t('prof_modal_price')}</label>
@@ -551,6 +698,7 @@ export default function CardDetailPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -27,4 +27,6 @@ public class UserCard {
     @ManyToOne
     @JoinColumn(name = "condition_code")
     private CardCondition condition;
+
+    private String rarity;
 }

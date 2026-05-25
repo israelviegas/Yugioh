@@ -59,6 +59,7 @@ export default function CardsPage() {
   const [filterStatus, setFilterStatus] = useState('ALL_CARDS');
   const [marketCards, setMarketCards] = useState<UserCard[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Trade Modal States
   const [showTradeModal, setShowTradeModal] = useState(false);
@@ -78,45 +79,77 @@ export default function CardsPage() {
     }
   }, []);
 
+  // Restore state from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedPage = sessionStorage.getItem('catalog_page');
+      if (savedPage) setCurrentPage(Number(savedPage));
+      
+      const savedFilter = sessionStorage.getItem('catalog_filter');
+      if (savedFilter) setFilterStatus(savedFilter);
+
+      const savedSearch = sessionStorage.getItem('catalog_search');
+      if (savedSearch) {
+        setSearchTerm(savedSearch);
+        setDebouncedSearch(savedSearch);
+      }
+      
+      const savedItems = sessionStorage.getItem('catalog_items');
+      if (savedItems) setItemsPerPage(Number(savedItems));
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save state to sessionStorage
+  useEffect(() => {
+    if (!isInitialized) return;
+    sessionStorage.setItem('catalog_page', currentPage.toString());
+    sessionStorage.setItem('catalog_filter', filterStatus);
+    sessionStorage.setItem('catalog_search', searchTerm);
+    sessionStorage.setItem('catalog_items', itemsPerPage.toString());
+  }, [currentPage, filterStatus, searchTerm, itemsPerPage, isInitialized]);
+
   // Debounce search
   useEffect(() => {
+    if (!isInitialized) return;
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);
       setCurrentPage(1); // reset to page 1 on new search
     }, 450);
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, isInitialized]);
 
   // Data Fetching logic
   useEffect(() => {
+    if (!isInitialized) return;
     setLoading(true);
     
     if (filterStatus === 'ALL_CARDS') {
-      // Fetch base catalog cards
       const pageParam = currentPage - 1;
       const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
       
-      fetch(url)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && typeof data === 'object' && 'content' in data) {
-            setCards(Array.isArray(data.content) ? data.content : []);
-            setTotalPages(data.totalPages || 1);
-          } else {
-            const cardsList = Array.isArray(data) ? data : [];
-            setCards(cardsList);
-            setTotalPages(1);
-          }
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('Error fetching cards:', err);
-          setCards([]);
+      Promise.all([
+        fetch(url).then(res => res.json()),
+        fetch(`${getApiUrl()}/api/user-cards/market`).then(res => res.json())
+      ]).then(([cardsData, marketData]) => {
+        if (cardsData && typeof cardsData === 'object' && 'content' in cardsData) {
+          setCards(Array.isArray(cardsData.content) ? cardsData.content : []);
+          setTotalPages(cardsData.totalPages || 1);
+        } else {
+          setCards(Array.isArray(cardsData) ? cardsData : []);
           setTotalPages(1);
-          setLoading(false);
-        });
+        }
+        setMarketCards(Array.isArray(marketData) ? marketData : []);
+        setLoading(false);
+      }).catch(err => {
+        console.error('Error fetching data:', err);
+        setCards([]);
+        setMarketCards([]);
+        setTotalPages(1);
+        setLoading(false);
+      });
     } else {
-      // Fetch market cards
+      // Fetch market cards only
       fetch(`${getApiUrl()}/api/user-cards/market`)
         .then(res => res.json())
         .then(data => {
@@ -129,11 +162,7 @@ export default function CardsPage() {
           setLoading(false);
         });
     }
-  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [itemsPerPage, filterStatus]);
+  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus, isInitialized]);
 
   const getCardName = (card: Card) => {
     if (language === 'pt') return card.namePt || card.name;
@@ -166,7 +195,7 @@ export default function CardsPage() {
       const matchesSearch = getCardName(uc.card).toLowerCase().includes(debouncedSearch.toLowerCase());
       
       return matchesStatus && matchesUser && matchesSearch;
-    });
+    }).sort((a, b) => a.price - b.price);
   }
 
   useEffect(() => {
@@ -176,9 +205,17 @@ export default function CardsPage() {
   }, [processedMarketCards.length, itemsPerPage, filterStatus]);
 
   // The final cards array to render for current page
-  const itemsToRender = filterStatus === 'ALL_CARDS' 
-    ? cards 
-    : processedMarketCards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  let itemsToRender: any[] = [];
+  if (filterStatus === 'ALL_CARDS') {
+    itemsToRender = cards.flatMap(c => {
+      const sortedMarketCards = marketCards
+        .filter(uc => uc.card.id === c.id && uc.status !== 'COLLECTION')
+        .sort((a, b) => a.price - b.price);
+      return [c, ...sortedMarketCards];
+    });
+  } else {
+    itemsToRender = processedMarketCards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }
 
   // Market Handlers
   const handleBuyNow = async (uc: UserCard) => {
@@ -372,7 +409,10 @@ export default function CardsPage() {
             <select 
               className={styles.filterSelect}
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }}
             >
               <option value="ALL_CARDS">{t('filter_all_cards')}</option>
               <option value="ALL_MARKET">{t('filter_all_market')}</option>
@@ -385,7 +425,10 @@ export default function CardsPage() {
               <span>{t('cards_per_page')}</span>
               <select 
                 value={itemsPerPage} 
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
                 className={styles.itemsPerPageSelect}
               >
                 <option value={10}>10</option>
@@ -404,7 +447,7 @@ export default function CardsPage() {
         <>
           <div className={styles.grid}>
             {itemsToRender.map((item: any) => {
-              const isMarketCard = filterStatus !== 'ALL_CARDS';
+              const isMarketCard = !!item.user;
               const cardData = isMarketCard ? item.card : item;
               const isOwner = isMarketCard && currentUser && item.user.id === currentUser.id;
 
@@ -412,7 +455,7 @@ export default function CardsPage() {
                 <TiltCardWrapper 
                   key={isMarketCard ? `uc-${item.id}` : `c-${cardData.id}`} 
                   className={`${styles.card} glass-panel`}
-                  onClick={() => router.push(`/cards/${cardData.id}`)}
+                  onClick={() => router.push(`/cards/${cardData.id}${isMarketCard ? `?listing=${item.id}` : ''}`)}
                 >
                   <div className={styles.imageContainer}>
                     {cardData.imageUrl ? (
@@ -436,11 +479,19 @@ export default function CardsPage() {
                     
                     {isMarketCard ? (
                       <>
-                        <div className={styles.owner}>{t('listed_by')} <strong>{item.user?.username}</strong></div>
+                        <div className={styles.owner} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                          {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{item.user?.username}</span>
+                        </div>
                         {item.condition && (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
                             {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
-                            <strong>{language === 'ja' ? item.condition.nameJa : language === 'pt' ? item.condition.namePt : item.condition.nameEn} ({item.condition.code})</strong>
+                            <span style={{ color: 'var(--text-primary)' }}>{language === 'ja' ? item.condition.nameJa : language === 'pt' ? item.condition.namePt : item.condition.nameEn} ({item.condition.code})</span>
+                          </div>
+                        )}
+                        {item.rarity && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                            {language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} 
+                            <span style={{ color: 'var(--text-primary)' }}>{item.rarity}</span>
                           </div>
                         )}
                         <span className={`${styles.statusBadge} ${item.status === 'FOR_SALE' ? styles.statusSale : styles.statusTrade}`}>

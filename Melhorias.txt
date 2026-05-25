@@ -11,6 +11,9 @@
  - Permitir o usuário inserir a mesma carta mais de uma vez no inventário?
  - Colocar filtro de oredenação alfabética?
  - Comprar e trocar em lote?
+ - Colocar a opção da pessoa colocar a foto real da carta
+ - Segurança de banco.Senhas devem ser criptografadas?
+ - Testar com vários usuários colocando uma mesma carta para vender e trocar
  
  
  Sobre este problema:

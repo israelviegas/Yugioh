@@ -85,31 +85,7 @@ public class DataSeeder implements CommandLineRunner {
         kaiba.setRole("USER");
         userRepository.save(kaiba);
 
-        // Seed algumas cartas para os usuários
-        List<Card> allCards = cardRepository.findAll();
-        CardCondition nm = cardConditionRepository.findById("NM").orElse(null);
-        CardCondition mp = cardConditionRepository.findById("MP").orElse(null);
-
-        if (allCards.size() >= 10) {
-            // Yugi cards
-            UserCard uc1 = new UserCard(); uc1.setUser(yugi); uc1.setCard(allCards.get(0)); uc1.setStatus("FOR_SALE"); uc1.setPrice(150.0); uc1.setCondition(nm); userCardRepository.save(uc1);
-            UserCard uc2 = new UserCard(); uc2.setUser(yugi); uc2.setCard(allCards.get(1)); uc2.setStatus("FOR_SALE"); uc2.setPrice(80.50); uc2.setCondition(mp); userCardRepository.save(uc2);
-            UserCard uc3 = new UserCard(); uc3.setUser(yugi); uc3.setCard(allCards.get(2)); uc3.setStatus("FOR_TRADE"); uc3.setPrice(0.0); uc3.setCondition(nm); userCardRepository.save(uc3);
-            UserCard uc4 = new UserCard(); uc4.setUser(yugi); uc4.setCard(allCards.get(3)); uc4.setStatus("FOR_TRADE"); uc4.setPrice(0.0); uc4.setCondition(nm); userCardRepository.save(uc4);
-            UserCard uc5 = new UserCard(); uc5.setUser(yugi); uc5.setCard(allCards.get(4)); uc5.setStatus("COLLECTION"); uc5.setPrice(0.0); uc5.setCondition(nm); userCardRepository.save(uc5);
-
-            // Kaiba cards
-            UserCard uc6 = new UserCard(); uc6.setUser(kaiba); uc6.setCard(allCards.get(5)); uc6.setStatus("FOR_SALE"); uc6.setPrice(300.0); uc6.setCondition(nm); userCardRepository.save(uc6);
-            UserCard uc7 = new UserCard(); uc7.setUser(kaiba); uc7.setCard(allCards.get(6)); uc7.setStatus("FOR_SALE"); uc7.setPrice(250.0); uc7.setCondition(nm); userCardRepository.save(uc7);
-            UserCard uc8 = new UserCard(); uc8.setUser(kaiba); uc8.setCard(allCards.get(7)); uc8.setStatus("FOR_TRADE"); uc8.setPrice(0.0); uc8.setCondition(mp); userCardRepository.save(uc8);
-            UserCard uc9 = new UserCard(); uc9.setUser(kaiba); uc9.setCard(allCards.get(8)); uc9.setStatus("FOR_TRADE"); uc9.setPrice(0.0); uc9.setCondition(mp); userCardRepository.save(uc9);
-            UserCard uc10 = new UserCard(); uc10.setUser(kaiba); uc10.setCard(allCards.get(9)); uc10.setStatus("COLLECTION"); uc10.setPrice(0.0); uc10.setCondition(nm); userCardRepository.save(uc10);
-        } else if (!allCards.isEmpty()) {
-            UserCard uc1 = new UserCard(); uc1.setUser(yugi); uc1.setCard(allCards.get(0)); uc1.setStatus("FOR_SALE"); uc1.setPrice(100.50); uc1.setCondition(nm); userCardRepository.save(uc1);
-            if (allCards.size() > 1) {
-                UserCard uc2 = new UserCard(); uc2.setUser(kaiba); uc2.setCard(allCards.get(1)); uc2.setStatus("FOR_TRADE"); uc2.setPrice(0.0); uc2.setCondition(nm); userCardRepository.save(uc2);
-            }
-        }
+        // Cartas foram removidas do seeder a pedido do usuário
 
         Strategy s1 = new Strategy();
         s1.setAuthor(yugi);
