@@ -67,4 +67,20 @@ Damaged / Danificada: Inutilizável em torneios. Rasgada, marcada de caneta, dan
                     "set_rarity": "Quarter Century Secret Rare", - Raridade
                     "set_rarity_code": "", - Código da Raridade
                     "set_price": "0"
+					
+Open Questions
+IMPORTANT
+
+1. Escopo do Chat: O chat deve ser global entre os dois usuários (como um WhatsApp direto entre o Yugi e o Kaiba) ou você prefere que seja "amarrado"
+ àquela carta específica que eles estão negociando? (Recomendo chat global, pois facilita se eles quiserem negociar múltiplas cartas depois).
+ Resposta: Chat Global
+
+2. Tempo Real: Para mantermos o escopo simples agora, usaremos um sistema onde o modal recarrega as mensagens a cada 3 segundos (Polling).
+ Isso funciona muito bem para MVPs. Concorda com essa abordagem inicial em vez de criar um servidor WebSocket complexo?
+ Resposta: Sim
+
+3. Botão Inicial: Quando o chat abrir a partir de uma carta, quer que ele preencha automaticamente a caixa de texto com algo como:
+"Olá, tenho interesse na sua carta [Nome da Carta]!" para facilitar a vida do usuário?
+Resposta: Sim
+E não esqueça de traduzir tudo conforme a linguagem			
 

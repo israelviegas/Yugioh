@@ -77,7 +77,10 @@ export default function Navbar() {
           <Link href="/cards" className={`${styles.link} ${pathname.startsWith('/cards') ? styles.activeLink : ''}`}>{t('nav_cards')}</Link>
           <Link href="/strategies" className={`${styles.link} ${pathname.startsWith('/strategies') ? styles.activeLink : ''}`}>{t('nav_strategies')}</Link>
           {user && (
-            <Link href="/profile" className={`${styles.link} ${pathname.startsWith('/profile') ? styles.activeLink : ''}`}>{t('nav_inventory')}</Link>
+            <>
+              <Link href="/profile" className={`${styles.link} ${pathname.startsWith('/profile') ? styles.activeLink : ''}`}>{t('nav_inventory')}</Link>
+              <Link href="/messages" className={`${styles.link} ${pathname.startsWith('/messages') ? styles.activeLink : ''}`}>{t('nav_messages')}</Link>
+            </>
           )}
           
           <div className={styles.langSelector}>

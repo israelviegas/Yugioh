@@ -20,6 +20,7 @@ const translations: Translations = {
   nav_inventory: { en: 'My Inventory', pt: 'Meu Inventário', ja: 'マイインベントリ' },
   nav_login: { en: 'Login', pt: 'Entrar', ja: 'ログイン' },
   nav_logout: { en: 'Logout', pt: 'Sair', ja: 'ログアウト' },
+  nav_messages: { en: 'Messages', pt: 'Mensagens', ja: 'メッセージ' },
 
   // Home
   home_hero_title: { en: 'THE ULTIMATE YU-GI-OH! TRADING HUB', pt: 'O MAIOR HUB DE TROCAS DE YU-GI-OH!', ja: '究極の遊戯王トレーディングハブ' },
@@ -141,7 +142,16 @@ const translations: Translations = {
   cd_modal_trade_success: { en: 'Trade proposal sent successfully! The duelist will review your offer.', pt: 'Proposta de troca enviada com sucesso! O duelista revisará sua oferta.', ja: 'トレード提案を送信しました！相手がオファーを確認します。' },
   cd_modal_trade_fail: { en: 'Failed to send trade proposal.', pt: 'Falha ao enviar proposta de troca.', ja: 'トレード提案の送信に失敗しました。' },
   cd_modal_trade_select_err: { en: 'Please select a target duelist listing and at least one card to offer.', pt: 'Por favor, selecione o anúncio de um duelista e pelo menos uma carta para oferecer.', ja: '対象のデュエリストの出品と、提供するカードを少なくとも1枚選択してください。' },
-  cd_modal_no_inventory: { en: 'You do not have any cards available for trade or sale in your inventory. Add cards in your Profile first!', pt: 'Você não tem cartas disponíveis para troca ou venda em seu inventário. Adicione cartas no seu Perfil primeiro!', ja: 'インベントリにトレードや販売が可能なカードがありません。先にプロフィールでカードを追加してください！' }
+  cd_modal_no_inventory: { en: 'You do not have any cards available for trade or sale in your inventory. Add cards in your Profile first!', pt: 'Você não tem cartas disponíveis para troca ou venda em seu inventário. Adicione cartas no seu Perfil primeiro!', ja: 'インベントリにトレードや販売が可能なカードがありません。先にプロフィールでカードを追加してください！' },
+
+  // Chat
+  chat_with: { en: 'Chat with', pt: 'Conversar com', ja: 'チャット' },
+  chat_type_msg: { en: 'Type a message...', pt: 'Digite uma mensagem...', ja: 'メッセージを入力...' },
+  chat_send: { en: 'Send', pt: 'Enviar', ja: '送信' },
+  chat_login_req: { en: 'Please login to chat with this duelist! Go to login page?', pt: 'Por favor, faça login para conversar com este duelista! Deseja ir para a tela de login?', ja: 'チャットするにはログインしてください！ログイン画面へ移動しますか？' },
+  chat_auto_msg: { en: 'Hi, I have interest in your card', pt: 'Olá, tenho interesse na sua carta', ja: 'こんにちは、あなたのカードに興味があります' },
+  inbox_title: { en: 'My Messages', pt: 'Minhas Mensagens', ja: 'マイメッセージ' },
+  inbox_no_messages: { en: 'No conversations found.', pt: 'Nenhuma conversa encontrada.', ja: '会話が見つかりません。' }
 };
 
 interface LanguageContextType {

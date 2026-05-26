@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getApiUrl } from '@/config';
 import { useLanguage } from '@/context/LanguageContext';
 import TiltCardWrapper from '@/components/TiltCardWrapper';
+import ChatModal from '@/components/ChatModal';
 import cardStyles from '../Cards.module.css';
 import styles from './CardDetail.module.css';
 
@@ -39,6 +40,13 @@ interface UserCard {
   card: Card;
   status: string;
   price: number;
+  condition?: {
+    code: string;
+    nameEn: string;
+    namePt: string;
+    nameJa: string;
+  };
+  rarity?: string;
 }
 
 export default function CardDetailPage() {
@@ -59,6 +67,10 @@ export default function CardDetailPage() {
   const [tradeSuccess, setTradeSuccess] = useState('');
   const [tradeError, setTradeError] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Chat Modal
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatTargetUser, setChatTargetUser] = useState<{ id: number; username: string } | null>(null);
 
   // Marketplace & Add Card States
   const [marketListings, setMarketListings] = useState<UserCard[]>([]);
@@ -205,6 +217,18 @@ export default function CardDetailPage() {
       console.error('Error buying card:', err);
       alert('An error occurred.');
     }
+  };
+
+  const handleOpenChat = (user: { id: number; username: string }) => {
+    if (!currentUser) {
+      if (window.confirm(t('chat_login_req'))) {
+        router.push('/login');
+      }
+      return;
+    }
+    if (user.id === currentUser.id) return;
+    setChatTargetUser(user);
+    setShowChatModal(true);
   };
 
   const handleOpenTradeModalTarget = async (listing: UserCard) => {
@@ -453,6 +477,13 @@ export default function CardDetailPage() {
                       {t('cd_trade_proposal')}
                     </button>
                   )}
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenChat(featuredListing.user); }}
+                    className={`btn-secondary ${cardStyles.actionBtn}`}
+                    style={{ marginTop: '0.5rem', position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    💬 {t('chat_with')} {featuredListing.user.username}
+                  </button>
                 </div>
               </div>
             </div>
@@ -508,6 +539,13 @@ export default function CardDetailPage() {
                       {t('cd_trade_proposal')}
                     </button>
                   )}
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenChat(item.user); }}
+                    className={`btn-secondary ${cardStyles.actionBtn}`}
+                    style={{ marginTop: '0.5rem', position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    💬 {t('chat_with')} {item.user.username}
+                  </button>
                 </div>
               </div>
             ))}
@@ -697,6 +735,15 @@ export default function CardDetailPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {showChatModal && chatTargetUser && currentUser && (
+        <ChatModal 
+          currentUser={currentUser} 
+          targetUser={chatTargetUser} 
+          onClose={() => setShowChatModal(false)} 
+          initialMessage={`${t('chat_auto_msg')} ${getCardName(card)}!`}
+        />
       )}
       </div>
     </div>
