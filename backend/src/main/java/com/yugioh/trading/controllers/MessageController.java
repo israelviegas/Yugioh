@@ -44,6 +44,27 @@ public class MessageController {
         return ResponseEntity.ok(inbox);
     }
 
+    @GetMapping("/{userId}/unread-count")
+    public ResponseEntity<?> getUnreadCount(@PathVariable Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        long count = messageRepository.countByReceiverAndIsReadFalse(user);
+        return ResponseEntity.ok(count);
+    }
+
+    @PutMapping("/{userId}/{targetUserId}/read")
+    public ResponseEntity<?> markConversationAsRead(@PathVariable Long userId, @PathVariable Long targetUserId) {
+        User user = userRepository.findById(userId).orElse(null);
+        User targetUser = userRepository.findById(targetUserId).orElse(null);
+        if (user == null || targetUser == null) {
+            return ResponseEntity.badRequest().body("User or Target not found");
+        }
+        messageRepository.markAsRead(targetUser, user);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping
     public ResponseEntity<?> sendMessage(@RequestBody MessageDTO payload) {
         User sender = userRepository.findById(payload.getSenderId()).orElse(null);

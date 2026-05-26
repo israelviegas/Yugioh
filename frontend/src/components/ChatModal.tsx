@@ -36,6 +36,15 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
+
+        // Check if any message from the target user is unread
+        const hasUnread = Array.isArray(data) && data.some((msg: any) => msg.sender.id === targetUser.id && !msg.read);
+        if (hasUnread) {
+          await fetch(`${getApiUrl()}/api/messages/${currentUser.id}/${targetUser.id}/read`, {
+            method: 'PUT'
+          });
+          window.dispatchEvent(new Event('messages_read'));
+        }
       }
     } catch (err) {
       console.error("Failed to fetch messages", err);

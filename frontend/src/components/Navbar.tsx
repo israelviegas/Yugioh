@@ -4,14 +4,28 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
+import { getApiUrl } from '@/config';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [theme, setTheme] = useState('dark');
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
+
+  const fetchUnreadCount = async (userId: number) => {
+    try {
+      const res = await fetch(`${getApiUrl()}/api/messages/${userId}/unread-count`);
+      if (res.ok) {
+        const count = await res.json();
+        setUnreadCount(Number(count));
+      }
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
+    }
+  };
 
   const checkAuth = () => {
     if (typeof window !== 'undefined') {
@@ -50,6 +64,26 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount(user.id);
+      const interval = setInterval(() => {
+        fetchUnreadCount(user.id);
+      }, 5000);
+      
+      const handleReadEvent = () => {
+        fetchUnreadCount(user.id);
+      };
+      window.addEventListener('messages_read', handleReadEvent);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('messages_read', handleReadEvent);
+      };
+    } else {
+      setUnreadCount(0);
+    }
+  }, [user]);
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
@@ -79,7 +113,10 @@ export default function Navbar() {
           {user && (
             <>
               <Link href="/profile" className={`${styles.link} ${pathname.startsWith('/profile') ? styles.activeLink : ''}`}>{t('nav_inventory')}</Link>
-              <Link href="/messages" className={`${styles.link} ${pathname.startsWith('/messages') ? styles.activeLink : ''}`}>{t('nav_messages')}</Link>
+              <Link href="/messages" className={`${styles.link} ${pathname.startsWith('/messages') ? styles.activeLink : ''}`}>
+                {t('nav_messages')}
+                {unreadCount > 0 && <span className={styles.unreadBadge}>{unreadCount}</span>}
+              </Link>
             </>
           )}
           

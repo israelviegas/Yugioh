@@ -147,3 +147,18 @@
   color: var(--accent-gold);
   font-family: 'Cinzel', serif;
 }
+
+.unreadText {
+  font-weight: 800;
+  color: var(--text-primary) !important;
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-gold);
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--accent-gold);
+}

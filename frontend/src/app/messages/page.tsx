@@ -18,6 +18,7 @@ interface Message {
   receiver: User;
   content: string;
   createdAt: string;
+  read: boolean;
 }
 
 export default function MessagesPage() {
@@ -69,8 +70,27 @@ export default function MessagesPage() {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  const handleOpenChat = (partner: User) => {
+  const handleOpenChat = async (partner: User) => {
     setSelectedPartner(partner);
+    if (currentUser) {
+      try {
+        await fetch(`${getApiUrl()}/api/messages/${currentUser.id}/${partner.id}/read`, {
+          method: 'PUT'
+        });
+        window.dispatchEvent(new Event('messages_read'));
+      } catch (err) {
+        console.error('Failed to mark conversation as read:', err);
+      }
+      setConversations(prev =>
+        prev.map(c => {
+          const cPartner = c.sender.id === currentUser.id ? c.receiver : c.sender;
+          if (cPartner.id === partner.id) {
+            return { ...c, read: true };
+          }
+          return c;
+        })
+      );
+    }
   };
 
   const handleCloseChat = () => {
@@ -114,6 +134,7 @@ export default function MessagesPage() {
           {conversations.map((msg) => {
             const partner = msg.sender.id === currentUser.id ? msg.receiver : msg.sender;
             const initials = partner.username ? partner.username.slice(0, 2).toUpperCase() : '??';
+            const isUnread = !msg.read && msg.sender.id !== currentUser.id;
 
             return (
               <div 
@@ -124,13 +145,16 @@ export default function MessagesPage() {
                 <div className={styles.leftSection}>
                   <div className={styles.avatar}>{initials}</div>
                   <div className={styles.details}>
-                    <h3 className={styles.partnerName}>{partner.username}</h3>
-                    <p className={styles.lastMsg}>{msg.content}</p>
+                    <h3 className={styles.partnerName}>
+                      {partner.username}
+                      {isUnread && <span className={styles.unreadDot} style={{ marginLeft: '8px' }}></span>}
+                    </h3>
+                    <p className={`${styles.lastMsg} ${isUnread ? styles.unreadText : ''}`}>{msg.content}</p>
                   </div>
                 </div>
 
                 <div className={styles.rightSection}>
-                  <span className={styles.timestamp}>{formatTimestamp(msg.createdAt)}</span>
+                  <span className={styles.timestamp} style={isUnread ? { fontWeight: 'bold', color: 'var(--accent-gold)' } : {}}>{formatTimestamp(msg.createdAt)}</span>
                   <button 
                     type="button" 
                     className={`btn-secondary ${styles.actionBtn}`}

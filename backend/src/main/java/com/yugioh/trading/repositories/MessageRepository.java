@@ -3,8 +3,10 @@ package com.yugioh.trading.repositories;
 import com.yugioh.trading.models.Message;
 import com.yugioh.trading.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,5 +22,12 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            "  GROUP BY CASE WHEN m2.sender = :user THEN m2.receiver.id ELSE m2.sender.id END" +
            ") ORDER BY m.createdAt DESC")
     List<Message> findInbox(User user);
+
+    long countByReceiverAndIsReadFalse(User receiver);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Message m SET m.isRead = true WHERE m.sender = :sender AND m.receiver = :receiver AND m.isRead = false")
+    void markAsRead(User sender, User receiver);
 
 }
