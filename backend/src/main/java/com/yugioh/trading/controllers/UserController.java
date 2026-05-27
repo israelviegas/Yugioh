@@ -82,7 +82,8 @@ public class UserController {
 
     @GetMapping("/{id}/cards")
     public ResponseEntity<List<UserCard>> getUserCards(@PathVariable Long id) {
-        List<UserCard> cards = userCardRepository.findByUserId(id);
+        // Busca as cartas ordenadas pelo ID para evitar que mudem de posição no frontend após sofrerem atualização.
+        List<UserCard> cards = userCardRepository.findByUserIdOrderByIdAsc(id);
         return ResponseEntity.ok(cards);
     }
 

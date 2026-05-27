@@ -83,8 +83,11 @@ export default function ProfilePage() {
     }
   }, [router]);
 
-  const fetchData = async (userId: number) => {
-    setLoading(true);
+  // Busca os dados do perfil do usuário do backend.
+  // O parâmetro 'silent' permite atualizar os dados de forma silenciosa, sem disparar o loading spinner,
+  // preservando assim o estado visual da página (ex: scroll e aba ativa).
+  const fetchData = async (userId: number, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [cardsRes, tradesRes, conditionsRes] = await Promise.all([
         fetch(`${getApiUrl()}/api/users/${userId}/cards`),
@@ -104,7 +107,7 @@ export default function ProfilePage() {
       setUserCards([]);
       setTrades([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -221,7 +224,7 @@ export default function ProfilePage() {
         body: JSON.stringify(bodyPayload)
       });
       if (res.ok) {
-        fetchData(user.id);
+        fetchData(user.id, true);
       }
     } catch (err) {
       console.error('Error updating card:', err);
@@ -234,7 +237,7 @@ export default function ProfilePage() {
         method: 'DELETE'
       });
       if (res.ok) {
-        fetchData(user.id);
+        fetchData(user.id, true);
       }
     } catch (err) {
       console.error('Error deleting card:', err);
@@ -266,7 +269,7 @@ export default function ProfilePage() {
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        fetchData(user.id);
+        fetchData(user.id, true);
       }
     } catch (err) {
       console.error('Error responding trade:', err);
