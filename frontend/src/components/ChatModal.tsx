@@ -23,6 +23,73 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
+function MessageContent({ content }: { content: string }) {
+  const [parsedContent, setParsedContent] = useState<React.ReactNode>(content);
+
+  useEffect(() => {
+    const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+"([^"]+)"(\s+\((?:PT-BR|JP)\))?!?/i;
+    const match = content.match(regex);
+    if (match) {
+      const prefix = match[1];
+      const cardNameBase = match[2];
+      const suffix = match[3] || '';
+      const searchName = suffix ? `${cardNameBase}${suffix}`.trim() : cardNameBase;
+      
+      let isCancelled = false;
+      fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`)
+        .then(res => res.json())
+        .then(data => {
+          if (isCancelled) return;
+          const cards = data.content || data;
+          if (Array.isArray(cards) && cards.length > 0) {
+            const matchedCard = cards.find((c: any) => {
+              const nameLower = c.name?.toLowerCase();
+              const namePtLower = c.namePt?.toLowerCase();
+              const nameJaLower = c.nameJa?.toLowerCase();
+              const searchLower = searchName.toLowerCase();
+              const baseLower = cardNameBase.toLowerCase();
+              return nameLower === searchLower || namePtLower === searchLower || nameJaLower === searchLower ||
+                     nameLower === baseLower || namePtLower === baseLower || nameJaLower === baseLower;
+            }) || cards[0];
+
+            if (matchedCard) {
+              const cardId = matchedCard.id;
+              const fullLinkText = `"${cardNameBase}"${suffix}`;
+              const matchStr = match[0];
+              const parts = content.split(matchStr);
+              const hasExclamation = matchStr.endsWith('!');
+              
+              setParsedContent(
+                <>
+                  {parts[0]}
+                  {prefix} <a 
+                    href={`/cards/${cardId}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--accent-gold)', textDecoration: 'underline', fontWeight: 'bold' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {fullLinkText}
+                  </a>
+                  {hasExclamation ? '!' : ''}
+                  {parts[1]}
+                </>
+              );
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Error looking up card for message link", err);
+        });
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [content]);
+
+  return <span>{parsedContent}</span>;
+}
+
 export default function ChatModal({ currentUser, targetUser, initialMessage, onClose }: ChatModalProps) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -105,7 +172,7 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
               return (
                 <div key={msg.id} className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}>
                   <div className={styles.messageBubble}>
-                    <div className={styles.messageContent}>{msg.content}</div>
+                    <div className={styles.messageContent}><MessageContent content={msg.content} /></div>
                     <div className={styles.messageTime}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>

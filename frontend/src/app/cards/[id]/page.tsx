@@ -742,7 +742,13 @@ export default function CardDetailPage() {
           currentUser={currentUser} 
           targetUser={chatTargetUser} 
           onClose={() => setShowChatModal(false)} 
-          initialMessage={`${t('chat_auto_msg')} ${getCardName(card)}!`}
+          initialMessage={
+            language === 'pt' && getCardName(card).endsWith(' (PT-BR)')
+              ? `Olá, tenho interesse na sua carta "${getCardName(card).replace(' (PT-BR)', '')}" (PT-BR)!`
+              : language === 'ja' && getCardName(card).endsWith(' (JP)')
+              ? `こんにちは、あなたのカードに興味があります "${getCardName(card).replace(' (JP)', '')}" (JP)!`
+              : `${t('chat_auto_msg')} "${getCardName(card)}"!`
+          }
         />
       )}
       </div>
