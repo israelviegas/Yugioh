@@ -27,11 +27,12 @@ function MessageContent({ content }: { content: string }) {
   const [parsedContent, setParsedContent] = useState<React.ReactNode>(content);
 
   useEffect(() => {
-    const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+(.+?)(?:!)?$/i;
+    const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+([^!]+)(?:!)?/i;
     const match = content.match(regex);
+    console.log("[MessageContent] content:", content, "match:", match);
     if (match) {
       const prefix = match[1];
-      const cardNameText = match[2]; // e.g. "A Case for K9" (PT-BR)
+      const cardNameText = match[2].trim(); // e.g. "A Case for K9" (PT-BR)
       
       const clean = (str: string) => str.replace(/"/g, '').replace(/\s+\((?:PT-BR|JP)\)$/i, '').toLowerCase().trim();
       const searchName = clean(cardNameText);
