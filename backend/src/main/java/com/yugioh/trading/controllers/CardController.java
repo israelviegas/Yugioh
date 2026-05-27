@@ -5,6 +5,7 @@ import com.yugioh.trading.repositories.CardRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,10 +27,10 @@ public class CardController {
             @RequestParam(required = false) Boolean all) {
         
         if (all != null && all) {
-            return ResponseEntity.ok(cardRepository.findAll());
+            return ResponseEntity.ok(cardRepository.findAll(Sort.by("name").ascending()));
         }
         
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         if (search != null && !search.trim().isEmpty()) {
             String query = "%" + search.trim() + "%";
             Page<Card> result = cardRepository.searchCards(query, pageable);
