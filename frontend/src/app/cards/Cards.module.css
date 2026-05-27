@@ -283,3 +283,24 @@
   margin-top: 0.8rem;
 }
 
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.backButton:hover {
+  color: var(--accent-gold);
+  transform: translateX(-5px);
+}
+
+

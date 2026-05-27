@@ -453,6 +453,14 @@ export default function CardsPage() {
         <div className={styles.loading}>{t('summoning_cards')}</div>
       ) : (
         <>
+          {filterStatus === 'ALL_CARDS' && cards.length === 1 && searchTerm && (
+            <button 
+              className={styles.backButton} 
+              onClick={() => setSearchTerm('')}
+            >
+              ← {language === 'ja' ? '戻る' : language === 'pt' ? 'Voltar' : 'Back'}
+            </button>
+          )}
           <div className={styles.grid}>
             {itemsToRender.map((item: any) => {
               const isMarketCard = !!item.user;
