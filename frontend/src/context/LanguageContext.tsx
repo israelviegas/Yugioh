@@ -101,6 +101,7 @@ const translations: Translations = {
   prof_modal_select: { en: 'Select Card', pt: 'Selecionar Carta', ja: 'カードを選択' },
   prof_modal_status: { en: 'Status', pt: 'Status', ja: 'ステータス' },
   prof_modal_price: { en: 'Price ($)', pt: 'Preço (R$)', ja: '価格 (¥)' },
+  price_placeholder: { en: 'Price', pt: 'Preço', ja: '価格' },
   prof_modal_add_btn: { en: 'Add Card', pt: 'Adicionar Carta', ja: 'カードを追加' },
   prof_sync_api: { en: 'Sync API', pt: 'Sincronizar API', ja: 'APIを同期' },
   prof_edit_profile: { en: 'Edit Profile', pt: 'Editar Perfil', ja: 'プロフィール編集' },

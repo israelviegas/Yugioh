@@ -109,6 +109,13 @@ export default function ProfilePage() {
   };
 
   const handleOpenAddModal = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('catalog_page');
+      sessionStorage.removeItem('catalog_filter');
+      sessionStorage.removeItem('catalog_search');
+      sessionStorage.removeItem('catalog_items');
+      window.dispatchEvent(new Event('reset_catalog'));
+    }
     router.push('/cards');
   };
 
@@ -513,7 +520,7 @@ export default function ProfilePage() {
                             }
                           }}
                           className={styles.actionInput}
-                          placeholder="Price"
+                          placeholder={t('price_placeholder')}
                         />
                       )}
 

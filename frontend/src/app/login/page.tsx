@@ -50,6 +50,13 @@ export default function LoginPage() {
 
       setSuccess(isLogin ? 'Login successful! Summoning duelist...' : 'Registration successful! Summoning duelist...');
       setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('catalog_page');
+          sessionStorage.removeItem('catalog_filter');
+          sessionStorage.removeItem('catalog_search');
+          sessionStorage.removeItem('catalog_items');
+          window.dispatchEvent(new Event('reset_catalog'));
+        }
         router.push('/cards');
       }, 1500);
     } catch (err: any) {

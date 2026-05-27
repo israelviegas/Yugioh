@@ -53,7 +53,7 @@ export default function CardDetailPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t, language } = useLanguage();
+  const { t, language, formatPrice } = useLanguage();
   const [card, setCard] = useState<Card | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -188,10 +188,10 @@ export default function CardDetailPage() {
     }
 
     const confirmMsg = language === 'ja'
-      ? `このカードを ${listing.user.username} から $${listing.price} で購入しますか？`
+      ? `このカードを ${listing.user.username} から ${formatPrice(listing.price)} で購入しますか？`
       : language === 'pt'
-      ? `Deseja comprar esta carta de ${listing.user.username} por $${listing.price}?`
-      : `Do you want to buy this card from ${listing.user.username} for $${listing.price}?`;
+      ? `Deseja comprar esta carta de ${listing.user.username} por ${formatPrice(listing.price)}?`
+      : `Do you want to buy this card from ${listing.user.username} for ${formatPrice(listing.price)}?`;
       
     if (!window.confirm(confirmMsg)) return;
 
@@ -204,10 +204,10 @@ export default function CardDetailPage() {
       if (res.ok) {
         alert(
           language === 'ja'
-            ? `${listing.user.username} から $${listing.price} で購入しました！コレクションに追加されました。`
+            ? `${listing.user.username} から ${formatPrice(listing.price)} で購入しました！コレクションに追加されました。`
             : language === 'pt'
-            ? `Comprado com sucesso de ${listing.user.username} por $${listing.price}! Adicionado à sua coleção.`
-            : `Successfully purchased from ${listing.user.username} for $${listing.price}! Added to your collection.`
+            ? `Comprado com sucesso de ${listing.user.username} por ${formatPrice(listing.price)}! Adicionado à sua coleção.`
+            : `Successfully purchased from ${listing.user.username} for ${formatPrice(listing.price)}! Added to your collection.`
         );
         fetchMarketplaceListings();
       } else {
@@ -409,7 +409,6 @@ export default function CardDetailPage() {
                     {cs.setName && <div style={{ fontWeight: 'bold', marginBottom: '0.4rem', color: 'var(--text-primary)', fontSize: '0.9rem' }}>{cs.setName}</div>}
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{language === 'ja' ? 'コード: ' : language === 'pt' ? 'Código: ' : 'Set Code: '} <strong style={{ color: 'var(--text-primary)' }}>{cs.setCode}</strong></div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} <strong style={{ color: 'var(--accent-gold)' }}>{cs.setRarity}</strong> {cs.setRarityCode && `(${cs.setRarityCode})`}</div>
-                    {cs.setPrice && cs.setPrice !== '0.00' && cs.setPrice !== '0' && <div style={{ fontSize: '0.85rem', color: '#4aff80', marginTop: '0.3rem' }}>{language === 'ja' ? '参考価格: ' : language === 'pt' ? 'Preço Base: ' : 'Base Price: '} ${cs.setPrice}</div>}
                   </div>
                 ))}
               </div>
@@ -458,7 +457,7 @@ export default function CardDetailPage() {
                     {featuredListing.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
                   </span>
                   
-                  {featuredListing.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>${featuredListing.price.toFixed(2)}</div>}
+                  {featuredListing.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>{formatPrice(featuredListing.price)}</div>}
                   
                   {featuredListing.status === 'FOR_SALE' ? (
                     <button 
@@ -520,7 +519,7 @@ export default function CardDetailPage() {
                     {item.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
                   </span>
                   
-                  {item.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem' }}>${item.price.toFixed(2)}</div>}
+                  {item.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem' }}>{formatPrice(item.price)}</div>}
                   
                   {item.status === 'FOR_SALE' ? (
                     <button 

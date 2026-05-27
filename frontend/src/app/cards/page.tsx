@@ -49,6 +49,7 @@ export default function CardsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [preFilterSearchTerm, setPreFilterSearchTerm] = useState<string | null>(null);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,6 +78,22 @@ export default function CardsPage() {
         setCurrentUser(JSON.parse(stored));
       }
     }
+  }, []);
+
+  // Reset catalog state on custom event
+  useEffect(() => {
+    const handleReset = () => {
+      setCurrentPage(1);
+      setFilterStatus('ALL_CARDS');
+      setSearchTerm('');
+      setDebouncedSearch('');
+      setPreFilterSearchTerm(null);
+    };
+
+    window.addEventListener('reset_catalog', handleReset);
+    return () => {
+      window.removeEventListener('reset_catalog', handleReset);
+    };
   }, []);
 
   // Restore state from sessionStorage on mount
@@ -113,11 +130,13 @@ export default function CardsPage() {
   useEffect(() => {
     if (!isInitialized) return;
     const handler = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // reset to page 1 on new search
+      if (searchTerm !== debouncedSearch) {
+        setDebouncedSearch(searchTerm);
+        setCurrentPage(1); // reset to page 1 on new search
+      }
     }, 450);
     return () => clearTimeout(handler);
-  }, [searchTerm, isInitialized]);
+  }, [searchTerm, isInitialized, debouncedSearch]);
 
   // Data Fetching logic
   useEffect(() => {
@@ -411,7 +430,10 @@ export default function CardsPage() {
               placeholder={t('search_placeholder')} 
               className={styles.searchInput}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPreFilterSearchTerm(null);
+              }}
             />
             
             <select 
@@ -456,7 +478,14 @@ export default function CardsPage() {
           {filterStatus === 'ALL_CARDS' && cards.length === 1 && searchTerm && (
             <button 
               className={styles.backButton} 
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                if (preFilterSearchTerm !== null) {
+                  setSearchTerm(preFilterSearchTerm);
+                  setPreFilterSearchTerm(null);
+                } else {
+                  setSearchTerm('');
+                }
+              }}
             >
               ← {language === 'ja' ? '戻る' : language === 'pt' ? 'Voltar' : 'Back'}
             </button>
@@ -477,6 +506,7 @@ export default function CardsPage() {
                     } else {
                       const hasOptions = marketCards.some(uc => uc.card.id === cardData.id && uc.status !== 'COLLECTION');
                       if (hasOptions && cards.length > 1) {
+                        setPreFilterSearchTerm(searchTerm);
                         setSearchTerm(getCardName(cardData));
                       } else {
                         router.push(`/cards/${cardData.id}`);

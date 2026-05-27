@@ -101,6 +101,16 @@ export default function Navbar() {
     }
   };
 
+  const handleCatalogClick = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('catalog_page');
+      sessionStorage.removeItem('catalog_filter');
+      sessionStorage.removeItem('catalog_search');
+      sessionStorage.removeItem('catalog_items');
+      window.dispatchEvent(new Event('reset_catalog'));
+    }
+  };
+
   return (
     <nav className={styles.navbar}>
       <div className={styles.container}>
@@ -108,7 +118,7 @@ export default function Navbar() {
           DuelistHub
         </Link>
         <div className={styles.links}>
-          <Link href="/cards" className={`${styles.link} ${pathname.startsWith('/cards') ? styles.activeLink : ''}`}>{t('nav_cards')}</Link>
+          <Link href="/cards" onClick={handleCatalogClick} className={`${styles.link} ${pathname.startsWith('/cards') ? styles.activeLink : ''}`}>{t('nav_cards')}</Link>
           <Link href="/strategies" className={`${styles.link} ${pathname.startsWith('/strategies') ? styles.activeLink : ''}`}>{t('nav_strategies')}</Link>
           {user && (
             <>
