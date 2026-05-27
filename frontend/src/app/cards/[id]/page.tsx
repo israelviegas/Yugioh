@@ -742,13 +742,31 @@ export default function CardDetailPage() {
           currentUser={currentUser} 
           targetUser={chatTargetUser} 
           onClose={() => setShowChatModal(false)} 
-          initialMessage={
-            language === 'pt' && getCardName(card).endsWith(' (PT-BR)')
-              ? `Olá, tenho interesse na sua carta "${getCardName(card).replace(' (PT-BR)', '')}" (PT-BR)!`
-              : language === 'ja' && getCardName(card).endsWith(' (JP)')
-              ? `こんにちは、あなたのカードに興味があります "${getCardName(card).replace(' (JP)', '')}" (JP)!`
-              : `${t('chat_auto_msg')} "${getCardName(card)}"!`
-          }
+          initialMessage={(() => {
+            const cardName = getCardName(card);
+            let baseName = cardName;
+            let suffix = '';
+            if (cardName.endsWith(' (PT-BR)')) {
+              baseName = cardName.replace(' (PT-BR)', '');
+              suffix = ' (PT-BR)';
+            } else if (cardName.endsWith(' (JP)')) {
+              baseName = cardName.replace(' (JP)', '');
+              suffix = ' (JP)';
+            }
+            
+            let quotedBase = baseName;
+            if (!baseName.startsWith('"') || !baseName.endsWith('"')) {
+              quotedBase = `"${baseName.replace(/"/g, '')}"`;
+            }
+            
+            if (language === 'pt') {
+              return `Olá, tenho interesse na sua carta ${quotedBase}${suffix}!`;
+            } else if (language === 'ja') {
+              return `こんにちは、あなたのカードに興味があります ${quotedBase}${suffix}!`;
+            } else {
+              return `Hi, I have interest in your card ${quotedBase}${suffix}!`;
+            }
+          })()}
         />
       )}
       </div>

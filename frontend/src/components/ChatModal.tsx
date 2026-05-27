@@ -27,13 +27,14 @@ function MessageContent({ content }: { content: string }) {
   const [parsedContent, setParsedContent] = useState<React.ReactNode>(content);
 
   useEffect(() => {
-    const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+"([^"]+)"(\s+\((?:PT-BR|JP)\))?!?/i;
+    const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+(.+?)(?:!)?$/i;
     const match = content.match(regex);
     if (match) {
       const prefix = match[1];
-      const cardNameBase = match[2];
-      const suffix = match[3] || '';
-      const searchName = suffix ? `${cardNameBase}${suffix}`.trim() : cardNameBase;
+      const cardNameText = match[2]; // e.g. "A Case for K9" (PT-BR)
+      
+      const clean = (str: string) => str.replace(/"/g, '').replace(/\s+\((?:PT-BR|JP)\)$/i, '').toLowerCase().trim();
+      const searchName = clean(cardNameText);
       
       let isCancelled = false;
       fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`)
@@ -43,18 +44,15 @@ function MessageContent({ content }: { content: string }) {
           const cards = data.content || data;
           if (Array.isArray(cards) && cards.length > 0) {
             const matchedCard = cards.find((c: any) => {
-              const nameLower = c.name?.toLowerCase();
-              const namePtLower = c.namePt?.toLowerCase();
-              const nameJaLower = c.nameJa?.toLowerCase();
-              const searchLower = searchName.toLowerCase();
-              const baseLower = cardNameBase.toLowerCase();
-              return nameLower === searchLower || namePtLower === searchLower || nameJaLower === searchLower ||
-                     nameLower === baseLower || namePtLower === baseLower || nameJaLower === baseLower;
+              const nameClean = clean(c.name || '');
+              const namePtClean = clean(c.namePt || '');
+              const nameJaClean = clean(c.nameJa || '');
+              const targetClean = clean(cardNameText);
+              return nameClean === targetClean || namePtClean === targetClean || nameJaClean === targetClean;
             }) || cards[0];
 
             if (matchedCard) {
               const cardId = matchedCard.id;
-              const fullLinkText = `"${cardNameBase}"${suffix}`;
               const matchStr = match[0];
               const parts = content.split(matchStr);
               const hasExclamation = matchStr.endsWith('!');
@@ -69,7 +67,7 @@ function MessageContent({ content }: { content: string }) {
                     style={{ color: 'var(--accent-gold)', textDecoration: 'underline', fontWeight: 'bold' }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {fullLinkText}
+                    {cardNameText}
                   </a>
                   {hasExclamation ? '!' : ''}
                   {parts[1]}
