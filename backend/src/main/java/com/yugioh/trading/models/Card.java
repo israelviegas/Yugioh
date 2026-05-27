@@ -52,6 +52,14 @@ public class Card {
     @Column(columnDefinition = "boolean default false")
     private Boolean translatedBySystem = false;
 
+    private java.time.LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -123,4 +131,7 @@ public class Card {
 
     public Boolean getTranslatedBySystem() { return translatedBySystem; }
     public void setTranslatedBySystem(Boolean translatedBySystem) { this.translatedBySystem = translatedBySystem; }
+
+    public java.time.LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(java.time.LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
