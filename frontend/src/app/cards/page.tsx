@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import TiltCardWrapper from '@/components/TiltCardWrapper';
+import ChatModal from '@/components/ChatModal';
 import { getApiUrl } from '@/config';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './Cards.module.css';
@@ -64,6 +65,11 @@ export default function CardsPage() {
   
   // Trade Modal States
   const [showTradeModal, setShowTradeModal] = useState(false);
+
+  // Chat Modal States
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatTargetUser, setChatTargetUser] = useState<{ id: number; username: string } | null>(null);
+  const [chatCard, setChatCard] = useState<Card | null>(null);
   const [targetCard, setTargetCard] = useState<UserCard | null>(null);
   const [myCards, setMyCards] = useState<UserCard[]>([]);
   const [selectedMyCardIds, setSelectedMyCardIds] = useState<number[]>([]);
@@ -290,6 +296,19 @@ export default function CardsPage() {
     } catch (err) {
       console.error('Error buying card:', err);
     }
+  };
+
+  const handleOpenChat = (user: { id: number; username: string }, card: Card) => {
+    if (!currentUser) {
+      if (window.confirm(t('chat_login_req'))) {
+        router.push('/login');
+      }
+      return;
+    }
+    if (user.id === currentUser.id) return;
+    setChatTargetUser(user);
+    setChatCard(card);
+    setShowChatModal(true);
   };
 
   const handleOpenTradeModal = async (uc: UserCard) => {
@@ -558,27 +577,39 @@ export default function CardsPage() {
                         {item.status === 'FOR_SALE' && <div className={styles.price}>{formatPrice(item.price)}</div>}
                         
                         {!isOwner && (
-                          item.status === 'FOR_SALE' ? (
+                          <>
+                            {item.status === 'FOR_SALE' ? (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBuyNow(item);
+                                }} 
+                                className={`btn-primary ${styles.actionBtn}`}
+                              >
+                                {t('buy_now')}
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenTradeModal(item);
+                                }} 
+                                className={`btn-primary ${styles.actionBtn}`}
+                              >
+                                {t('offer_trade')}
+                              </button>
+                            )}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleBuyNow(item);
-                              }} 
-                              className={`btn-primary ${styles.actionBtn}`}
+                                handleOpenChat(item.user, cardData);
+                              }}
+                              className={`btn-secondary ${styles.actionBtn}`}
+                              style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', position: 'relative', zIndex: 20 }}
                             >
-                              {t('buy_now')}
+                              💬 {t('chat_with')} {item.user.username}
                             </button>
-                          ) : (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenTradeModal(item);
-                              }} 
-                              className={`btn-primary ${styles.actionBtn}`}
-                            >
-                              {t('offer_trade')}
-                            </button>
-                          )
+                          </>
                         )}
                       </>
                     ) : (
@@ -694,6 +725,39 @@ export default function CardsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showChatModal && chatTargetUser && currentUser && chatCard && (
+        <ChatModal 
+          currentUser={currentUser} 
+          targetUser={chatTargetUser} 
+          onClose={() => setShowChatModal(false)} 
+          initialMessage={(() => {
+            const cardName = getCardName(chatCard);
+            let baseName = cardName;
+            let suffix = '';
+            if (cardName.endsWith(' (PT-BR)')) {
+              baseName = cardName.replace(' (PT-BR)', '');
+              suffix = ' (PT-BR)';
+            } else if (cardName.endsWith(' (JP)')) {
+              baseName = cardName.replace(' (JP)', '');
+              suffix = ' (JP)';
+            }
+            
+            let quotedBase = baseName;
+            if (!baseName.startsWith('"') || !baseName.endsWith('"')) {
+              quotedBase = `"${baseName.replace(/"/g, '')}"`;
+            }
+            
+            if (language === 'pt') {
+              return `Olá, tenho interesse na sua carta ${quotedBase}${suffix}!`;
+            } else if (language === 'ja') {
+              return `こんにちは、あなたのカードに興味があります ${quotedBase}${suffix}!`;
+            } else {
+              return `Hi, I have interest in your card ${quotedBase}${suffix}!`;
+            }
+          })()}
+        />
       )}
     </div>
   );
