@@ -78,7 +78,7 @@ export default function CardDetailPage() {
   const [addStatus, setAddStatus] = useState('COLLECTION');
   const [addCondition, setAddCondition] = useState('NM');
   const [addRarity, setAddRarity] = useState('Common');
-  const [addPrice, setAddPrice] = useState<number>(0);
+  const [addPrice, setAddPrice] = useState<string>('0');
   const [addLoading, setAddLoading] = useState(false);
   const [conditions, setConditions] = useState<any[]>([]);
 
@@ -143,7 +143,7 @@ export default function CardDetailPage() {
     setAddStatus('COLLECTION');
     setAddCondition('NM');
     setAddRarity(uniqueRarities.length > 0 ? (uniqueRarities[0] as string) : 'Common');
-    setAddPrice(0);
+    setAddPrice('0');
     setShowAddModal(true);
   };
 
@@ -710,7 +710,19 @@ export default function CardDetailPage() {
                   <input 
                     type="number" 
                     value={addPrice} 
-                    onChange={(e) => setAddPrice(Number(e.target.value))}
+                    onChange={(e) => setAddPrice(e.target.value)}
+                    onFocus={() => {
+                      // Se o valor for '0' ou 0, limpa o campo para facilitar a digitação do usuário
+                      if (addPrice === '0' || Number(addPrice) === 0) {
+                        setAddPrice('');
+                      }
+                    }}
+                    onBlur={() => {
+                      // Se o campo ficar vazio ao perder o foco, redefine para '0'
+                      if (addPrice === '') {
+                        setAddPrice('0');
+                      }
+                    }}
                     style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
                     required
                     min="0"
