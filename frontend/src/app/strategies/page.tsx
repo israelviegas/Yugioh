@@ -64,7 +64,8 @@ export default function StrategiesPage() {
 
   const handleOpenModal = () => {
     if (!currentUser) {
-      alert('Please login to share your dueling strategy!');
+      // Alerta solicitando login para compartilhar estratégias (respeita o idioma selecionado)
+      alert(t('strat_login_required'));
       router.push('/login');
       return;
     }
@@ -100,14 +101,16 @@ export default function StrategiesPage() {
         throw new Error('Failed to publish strategy');
       }
 
-      setSubmitSuccess('Strategy published successfully! Inspiring fellow duelists...');
+      // Mensagem de sucesso traduzida ao publicar estratégia
+      setSubmitSuccess(t('strat_success_msg'));
       setTimeout(() => {
         setShowModal(false);
         fetchStrategies();
         setSubmitting(false);
       }, 1500);
     } catch (err: any) {
-      setSubmitError(err.message || 'An error occurred');
+      // Mensagem de erro traduzida em caso de falha no envio
+      setSubmitError(err.message || t('strat_error_msg'));
       setSubmitting(false);
     }
   };
@@ -145,14 +148,14 @@ export default function StrategiesPage() {
               {strategy.videoUrl && (
                 <div style={{ marginTop: '1.5rem' }}>
                   <a href={strategy.videoUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-gold)', textDecoration: 'underline' }}>
-                    🎥 Watch Dueling Guide / Video
+                    🎥 {t('strat_watch_video')}
                   </a>
                 </div>
               )}
             </div>
           ))}
           {strategies.length === 0 && !loading && (
-            <p className={styles.empty}>No strategies found. Be the first to share one!</p>
+            <p className={styles.empty}>{t('strat_empty_list')}</p>
           )}
         </div>
       )}
@@ -173,7 +176,7 @@ export default function StrategiesPage() {
                   className={styles.input} 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Exodia OTK Consistent Combo"
+                  placeholder={t('strat_placeholder_title')}
                 />
               </div>
 
@@ -184,7 +187,7 @@ export default function StrategiesPage() {
                   className={styles.textarea} 
                   value={content} 
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Explain your deck mechanics, win conditions, and key combos..."
+                  placeholder={t('strat_placeholder_content')}
                 />
               </div>
 
@@ -202,7 +205,7 @@ export default function StrategiesPage() {
               <div className={styles.modalActions}>
                 <button type="button" onClick={() => setShowModal(false)} className={styles.cancelBtn} disabled={submitting}>{t('cancel')}</button>
                 <button type="submit" className="btn-primary" disabled={submitting}>
-                  {submitting ? 'Publishing...' : t('publish')}
+                  {submitting ? t('strat_publishing') : t('publish')}
                 </button>
               </div>
             </form>
