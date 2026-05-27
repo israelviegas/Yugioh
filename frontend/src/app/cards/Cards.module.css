@@ -275,3 +275,11 @@
   font-size: 1rem;
   margin-top: 10px;
 }
+
+.optionsBtn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  margin-top: 0.8rem;
+}
+

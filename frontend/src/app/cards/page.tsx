@@ -207,12 +207,20 @@ export default function CardsPage() {
   // The final cards array to render for current page
   let itemsToRender: any[] = [];
   if (filterStatus === 'ALL_CARDS') {
-    itemsToRender = cards.flatMap(c => {
-      const sortedMarketCards = marketCards
-        .filter(uc => uc.card.id === c.id && uc.status !== 'COLLECTION')
-        .sort((a, b) => a.price - b.price);
-      return [c, ...sortedMarketCards];
-    });
+    if (cards.length === 1) {
+      itemsToRender = cards.flatMap(c => {
+        const sortedMarketCards = marketCards
+          .filter(uc => uc.card.id === c.id && uc.status !== 'COLLECTION')
+          .sort((a, b) => {
+            if (a.status === 'FOR_TRADE' && b.status === 'FOR_SALE') return -1;
+            if (a.status === 'FOR_SALE' && b.status === 'FOR_TRADE') return 1;
+            return a.price - b.price;
+          });
+        return [c, ...sortedMarketCards];
+      });
+    } else {
+      itemsToRender = cards;
+    }
   } else {
     itemsToRender = processedMarketCards.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }
@@ -455,7 +463,18 @@ export default function CardsPage() {
                 <TiltCardWrapper 
                   key={isMarketCard ? `uc-${item.id}` : `c-${cardData.id}`} 
                   className={`${styles.card} glass-panel`}
-                  onClick={() => router.push(`/cards/${cardData.id}${isMarketCard ? `?listing=${item.id}` : ''}`)}
+                  onClick={() => {
+                    if (isMarketCard) {
+                      router.push(`/cards/${cardData.id}?listing=${item.id}`);
+                    } else {
+                      const hasOptions = marketCards.some(uc => uc.card.id === cardData.id && uc.status !== 'COLLECTION');
+                      if (hasOptions && cards.length > 1) {
+                        setSearchTerm(getCardName(cardData));
+                      } else {
+                        router.push(`/cards/${cardData.id}`);
+                      }
+                    }
+                  }}
                 >
                   <div className={styles.imageContainer}>
                     {cardData.imageUrl ? (
@@ -531,6 +550,17 @@ export default function CardsPage() {
                           {cardData.attack !== null && <span>ATK: {cardData.attack}</span>}
                           {cardData.defense !== null && <span>DEF: {cardData.defense}</span>}
                         </div>
+                        {cards.length > 1 && marketCards.some(uc => uc.card.id === cardData.id && uc.status !== 'COLLECTION') && (
+                          <button 
+                            className={`btn-secondary ${styles.optionsBtn}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSearchTerm(getCardName(cardData));
+                            }}
+                          >
+                            {t('options_available')}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

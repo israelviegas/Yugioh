@@ -151,7 +151,8 @@ const translations: Translations = {
   chat_login_req: { en: 'Please login to chat with this duelist! Go to login page?', pt: 'Por favor, faça login para conversar com este duelista! Deseja ir para a tela de login?', ja: 'チャットするにはログインしてください！ログイン画面へ移動しますか？' },
   chat_auto_msg: { en: 'Hi, I have interest in your card', pt: 'Olá, tenho interesse na sua carta', ja: 'こんにちは、あなたのカードに興味があります' },
   inbox_title: { en: 'My Messages', pt: 'Minhas Mensagens', ja: 'マイメッセージ' },
-  inbox_no_messages: { en: 'No conversations found.', pt: 'Nenhuma conversa encontrada.', ja: '会話が見つかりません。' }
+  inbox_no_messages: { en: 'No conversations found.', pt: 'Nenhuma conversa encontrada.', ja: '会話が見つかりません。' },
+  options_available: { en: 'Sale or trade options available', pt: 'Existem opções de venda ou troca', ja: '販売・トレードのオプションあり' }
 };
 
 interface LanguageContextType {
