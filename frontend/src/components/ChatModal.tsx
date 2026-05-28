@@ -23,7 +23,8 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
-function MessageContent({ content }: { content: string }) {
+function MessageContent({ message }: { message: Message }) {
+  const content = message.content;
   const [parsedContent, setParsedContent] = useState<React.ReactNode>(content);
 
   useEffect(() => {
@@ -38,53 +39,71 @@ function MessageContent({ content }: { content: string }) {
       const searchName = clean(cardNameText);
       
       let isCancelled = false;
-      fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`)
-        .then(res => res.json())
-        .then(data => {
-          if (isCancelled) return;
-          const cards = data.content || data;
-          if (Array.isArray(cards) && cards.length > 0) {
-            const matchedCard = cards.find((c: any) => {
-              const nameClean = clean(c.name || '');
-              const namePtClean = clean(c.namePt || '');
-              const nameJaClean = clean(c.nameJa || '');
-              const targetClean = clean(cardNameText);
-              return nameClean === targetClean || namePtClean === targetClean || nameJaClean === targetClean;
-            }) || cards[0];
 
-            if (matchedCard) {
-              const cardId = matchedCard.id;
-              const matchStr = match[0];
-              const parts = content.split(matchStr);
-              const hasExclamation = matchStr.endsWith('!');
-              
-              setParsedContent(
-                <>
-                  {parts[0]}
-                  {prefix} <a 
-                    href={`/cards/${cardId}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--accent-gold)', textDecoration: 'underline', fontWeight: 'bold' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {cardNameText}
-                  </a>
-                  {hasExclamation ? '!' : ''}
-                  {parts[1]}
-                </>
-              );
-            }
+      // Executa as requisições em paralelo para buscar a carta e a lista de anúncios
+      Promise.all([
+        fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`).then(res => res.json()),
+        fetch(`${getApiUrl()}/api/user-cards/market`).then(res => res.json())
+      ])
+      .then(([cardsData, marketData]) => {
+        if (isCancelled) return;
+        
+        const cards = cardsData.content || cardsData;
+        const marketListings = Array.isArray(marketData) ? marketData : [];
+        
+        if (Array.isArray(cards) && cards.length > 0) {
+          const matchedCard = cards.find((c: any) => {
+            const nameClean = clean(c.name || '');
+            const namePtClean = clean(c.namePt || '');
+            const nameJaClean = clean(c.nameJa || '');
+            const targetClean = clean(cardNameText);
+            return nameClean === targetClean || namePtClean === targetClean || nameJaClean === targetClean;
+          }) || cards[0];
+
+          if (matchedCard) {
+            const cardId = matchedCard.id;
+            
+            // Procura o anúncio ativo da carta pertencente ao destinatário da mensagem (dono do anúncio)
+            const matchedListing = marketListings.find((l: any) => 
+              l.card.id === cardId && 
+              l.user.id === message.receiver.id
+            );
+            
+            const listingParam = matchedListing ? `?listing=${matchedListing.id}` : '';
+            const href = `/cards/${cardId}${listingParam}`;
+            
+            const matchStr = match[0];
+            const parts = content.split(matchStr);
+            const hasExclamation = matchStr.endsWith('!');
+            
+            setParsedContent(
+              <>
+                {parts[0]}
+                {prefix} <a 
+                  href={href} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--accent-gold)', textDecoration: 'underline', fontWeight: 'bold' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {cardNameText}
+                </a>
+                {hasExclamation ? '!' : ''}
+                {parts[1]}
+              </>
+            );
           }
-        })
-        .catch(err => {
-          console.error("Error looking up card for message link", err);
-        });
+        }
+      })
+      .catch(err => {
+        console.error("Error looking up card for message link", err);
+      });
+
       return () => {
         isCancelled = true;
       };
     }
-  }, [content]);
+  }, [content, message.receiver.id]);
 
   return <span>{parsedContent}</span>;
 }
@@ -171,7 +190,7 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
               return (
                 <div key={msg.id} className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}>
                   <div className={styles.messageBubble}>
-                    <div className={styles.messageContent}><MessageContent content={msg.content} /></div>
+                    <div className={styles.messageContent}><MessageContent message={msg} /></div>
                     <div className={styles.messageTime}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
