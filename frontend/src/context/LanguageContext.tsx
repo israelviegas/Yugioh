@@ -70,6 +70,7 @@ const translations: Translations = {
   offer_trade: { en: 'Offer Trade', pt: 'Trocar Agora', ja: 'トレードを提案' },
   summoning_market: { en: 'Summoning market listings...', pt: 'Invocando ofertas do mercado...', ja: '市場の出品を召喚中...' },
   no_market_match: { en: 'No market listings match your criteria.', pt: 'Nenhum anúncio corresponde aos seus critérios.', ja: '条件に一致する出品がありません。' },
+  no_cards_found: { en: 'No cards found.', pt: 'Nenhuma carta encontrada.', ja: 'カードが見つかりません。' },
 
   // Strategies
   strat_title: { en: 'Duelist Strategies', pt: 'Estratégias de Duelistas', ja: 'デュエリストの戦略' },

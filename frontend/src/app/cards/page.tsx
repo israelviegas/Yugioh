@@ -687,7 +687,7 @@ export default function CardsPage() {
             })}
             {itemsToRender.length === 0 && (
               <p style={{ gridColumn: '1/-1', textAlign: 'center' }}>
-                {filterStatus !== 'ALL_CARDS' ? t('no_market_match') : 'No cards found.'}
+                {filterStatus !== 'ALL_CARDS' ? t('no_market_match') : t('no_cards_found')}
               </p>
             )}
           </div>
