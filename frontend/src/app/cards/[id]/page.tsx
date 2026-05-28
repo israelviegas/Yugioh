@@ -333,24 +333,26 @@ export default function CardDetailPage() {
   if (loading) return <div className={styles.loading}>{t('cd_loading')}</div>;
   if (!card) return <div className={styles.loading}>{t('cd_not_found')}</div>;
 
-  const allOtherListings = marketListings
-    .filter(l => l.card.id === card.id && (!currentUser || l.user.id !== currentUser.id))
-    .sort((a, b) => a.price - b.price);
+  const cardListings = marketListings.filter(l => l.card.id === card.id);
   
   const featuredListingId = searchParams.get('listing');
   let featuredListing = null;
-  let otherListings = allOtherListings;
 
   if (featuredListingId) {
-    const found = allOtherListings.find(l => l.id.toString() === featuredListingId);
-    if (found) {
-      featuredListing = found;
-      otherListings = allOtherListings.filter(l => l.id.toString() !== featuredListingId);
-    }
+    // Procura o anúncio em destaque entre todos os anúncios da carta, incluindo os do próprio usuário logado
+    featuredListing = cardListings.find(l => l.id.toString() === featuredListingId) || null;
   }
 
-  const hasTradeListings = allOtherListings.some(l => l.status === 'FOR_TRADE');
-  const hasSaleListings = allOtherListings.some(l => l.status === 'FOR_SALE');
+  // Outros anúncios excluem os do próprio usuário e o anúncio em destaque
+  const otherListings = cardListings
+    .filter(l => 
+      (!currentUser || l.user.id !== currentUser.id) && 
+      (!featuredListing || l.id !== featuredListing.id)
+    )
+    .sort((a, b) => a.price - b.price);
+
+  const hasTradeListings = otherListings.some(l => l.status === 'FOR_TRADE');
+  const hasSaleListings = otherListings.some(l => l.status === 'FOR_SALE');
 
   return (
     <div style={{ maxWidth: (otherListings.length > 0 || featuredListing) ? '1500px' : '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
@@ -429,63 +431,73 @@ export default function CardDetailPage() {
       {(otherListings.length > 0 || featuredListing) && (
         <div className={`${styles.sidebar} glass-panel`} style={{ gap: '1.5rem' }}>
           {featuredListing && (
-            <div style={{ flexShrink: 0 }}>
-              <h2 style={{ color: 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.4rem' }}>
-                {language === 'ja' ? '選択した提案' : language === 'pt' ? 'Proposta Selecionada' : 'Selected Proposal'}
-              </h2>
-              <div className={`${styles.marketListingCard} glass-panel`} style={{ marginTop: '1rem', border: '1px solid var(--accent-gold)', background: 'rgba(212, 175, 55, 0.05)' }}>
-                <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
-                  <div className={cardStyles.owner} style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                    {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{featuredListing.user?.username}</span>
+            (() => {
+              // Verifica se a proposta em destaque pertence ao usuário logado
+              const isFeaturedOwner = featuredListing.user.id === currentUser?.id;
+              return (
+                <div style={{ flexShrink: 0 }}>
+                  <h2 style={{ color: 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.4rem' }}>
+                    {isFeaturedOwner ? t('my_proposal') : (language === 'ja' ? '選択した提案' : language === 'pt' ? 'Proposta Selecionada' : 'Selected Proposal')}
+                  </h2>
+                  <div className={`${styles.marketListingCard} glass-panel`} style={{ marginTop: '1rem', border: '1px solid var(--accent-gold)', background: 'rgba(212, 175, 55, 0.05)' }}>
+                    <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
+                      <div className={cardStyles.owner} style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                        {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{featuredListing.user?.username}</span>
+                      </div>
+                      
+                      {featuredListing.condition && (
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                          {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
+                          <span style={{ color: 'var(--text-primary)' }}>{language === 'ja' ? featuredListing.condition.nameJa : language === 'pt' ? featuredListing.condition.namePt : featuredListing.condition.nameEn} ({featuredListing.condition.code})</span>
+                        </div>
+                      )}
+                      
+                      {featuredListing.rarity && (
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
+                          {language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} 
+                          <span style={{ color: 'var(--text-primary)' }}>{featuredListing.rarity}</span>
+                        </div>
+                      )}
+                      
+                      <span style={{ marginBottom: '0.5rem', alignSelf: 'flex-start' }} className={`${cardStyles.statusBadge} ${featuredListing.status === 'FOR_SALE' ? cardStyles.statusSale : cardStyles.statusTrade}`}>
+                        {featuredListing.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
+                      </span>
+                      
+                      {featuredListing.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>{formatPrice(featuredListing.price)}</div>}
+                      
+                      {!isFeaturedOwner && (
+                        <>
+                          {featuredListing.status === 'FOR_SALE' ? (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBuyCard(featuredListing); }} 
+                              className={`btn-primary ${cardStyles.actionBtn}`}
+                              style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                            >
+                              {t('buy_now')}
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenTradeModalTarget(featuredListing); }} 
+                              className={`btn-primary ${cardStyles.actionBtn}`}
+                              style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
+                            >
+                              {t('cd_trade_proposal')}
+                            </button>
+                          )}
+                          <button 
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenChat(featuredListing.user); }}
+                            className={`btn-secondary ${cardStyles.actionBtn}`}
+                            style={{ marginTop: '0.5rem', position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                          >
+                            💬 {t('chat_with')} {featuredListing.user.username}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  
-                  {featuredListing.condition && (
-                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                      {language === 'ja' ? '状態: ' : language === 'pt' ? 'Condição: ' : 'Condition: '} 
-                      <span style={{ color: 'var(--text-primary)' }}>{language === 'ja' ? featuredListing.condition.nameJa : language === 'pt' ? featuredListing.condition.namePt : featuredListing.condition.nameEn} ({featuredListing.condition.code})</span>
-                    </div>
-                  )}
-                  
-                  {featuredListing.rarity && (
-                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
-                      {language === 'ja' ? 'レアリティ: ' : language === 'pt' ? 'Raridade: ' : 'Rarity: '} 
-                      <span style={{ color: 'var(--text-primary)' }}>{featuredListing.rarity}</span>
-                    </div>
-                  )}
-                  
-                  <span style={{ marginBottom: '0.5rem', alignSelf: 'flex-start' }} className={`${cardStyles.statusBadge} ${featuredListing.status === 'FOR_SALE' ? cardStyles.statusSale : cardStyles.statusTrade}`}>
-                    {featuredListing.status === 'FOR_SALE' ? t('for_sale') : t('for_trade')}
-                  </span>
-                  
-                  {featuredListing.status === 'FOR_SALE' && <div className={cardStyles.price} style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>{formatPrice(featuredListing.price)}</div>}
-                  
-                  {featuredListing.status === 'FOR_SALE' ? (
-                    <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBuyCard(featuredListing); }} 
-                      className={`btn-primary ${cardStyles.actionBtn}`}
-                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
-                    >
-                      {t('buy_now')}
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenTradeModalTarget(featuredListing); }} 
-                      className={`btn-primary ${cardStyles.actionBtn}`}
-                      style={{ marginTop: 'auto', position: 'relative', zIndex: 20 }}
-                    >
-                      {t('cd_trade_proposal')}
-                    </button>
-                  )}
-                  <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenChat(featuredListing.user); }}
-                    className={`btn-secondary ${cardStyles.actionBtn}`}
-                    style={{ marginTop: '0.5rem', position: 'relative', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                  >
-                    💬 {t('chat_with')} {featuredListing.user.username}
-                  </button>
                 </div>
-              </div>
-            </div>
+              );
+            })()
           )}
 
           {otherListings.length > 0 && (

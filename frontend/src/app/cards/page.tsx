@@ -576,7 +576,19 @@ export default function CardsPage() {
                         
                         {item.status === 'FOR_SALE' && <div className={styles.price}>{formatPrice(item.price)}</div>}
                         
-                        {!isOwner && (
+                        {isOwner ? (
+                          // Botão exibido se o anúncio for do próprio usuário logado (redireciona para o detalhe daquela proposta)
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/cards/${cardData.id}?listing=${item.id}`);
+                            }}
+                            className={`btn-secondary ${styles.actionBtn}`}
+                            style={{ width: '100%', position: 'relative', zIndex: 20 }}
+                          >
+                            {t('my_proposal')}
+                          </button>
+                        ) : (
                           <>
                             {item.status === 'FOR_SALE' ? (
                               <button 
