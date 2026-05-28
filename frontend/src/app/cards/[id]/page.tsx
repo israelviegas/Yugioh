@@ -594,7 +594,9 @@ export default function CardDetailPage() {
                     style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
                   >
                     {availableListings.map(l => (
-                      <option key={l.id} value={l.id}>{l.user.username} (Listing #{l.id})</option>
+                      <option key={l.id} value={l.id}>
+                        {l.user.username} - {l.rarity || 'Common'} ({l.condition ? (language === 'ja' ? l.condition.nameJa : language === 'pt' ? l.condition.namePt : l.condition.nameEn) : ''}) (Listing #{l.id})
+                      </option>
                     ))}
                   </select>
                 </div>
