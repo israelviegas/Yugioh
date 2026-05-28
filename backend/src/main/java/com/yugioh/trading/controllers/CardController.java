@@ -53,16 +53,16 @@ public class CardController {
         return ResponseEntity.ok(cardRepository.findAll(pageable));
     }
 
+    // Endpoint para retornar todas as raridades distintas ordenadas alfabeticamente
+    @GetMapping("/rarities")
+    public ResponseEntity<?> getRarities() {
+        return ResponseEntity.ok(cardRepository.findDistinctRarities());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Card> getCardById(@PathVariable Long id) {
         return cardRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Endpoint para retornar todas as raridades distintas ordenadas alfabeticamente
-    @GetMapping("/rarities")
-    public ResponseEntity<?> getRarities() {
-        return ResponseEntity.ok(cardRepository.findDistinctRarities());
     }
 }
