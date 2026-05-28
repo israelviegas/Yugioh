@@ -33,6 +33,7 @@ interface UserCard {
   card: Card;
   status: string;
   price: number;
+  rarity?: string;
   condition?: {
     code: string;
     nameEn: string;
@@ -62,6 +63,8 @@ export default function CardsPage() {
   const [marketCards, setMarketCards] = useState<UserCard[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [rarities, setRarities] = useState<string[]>([]);
+  const [selectedRarity, setSelectedRarity] = useState('');
   
   // Trade Modal States
   const [showTradeModal, setShowTradeModal] = useState(false);
@@ -76,7 +79,7 @@ export default function CardsPage() {
   const [tradeSuccess, setTradeSuccess] = useState('');
   const [tradeError, setTradeError] = useState('');
 
-  // Initial user setup
+  // Initial user and rarities setup
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('yugioh_user');
@@ -84,6 +87,13 @@ export default function CardsPage() {
         setCurrentUser(JSON.parse(stored));
       }
     }
+
+    fetch(`${getApiUrl()}/api/cards/rarities`)
+      .then(res => res.json())
+      .then(data => {
+        setRarities(Array.isArray(data) ? data : []);
+      })
+      .catch(err => console.error("Error fetching rarities list:", err));
   }, []);
 
   // Reset catalog state on custom event
@@ -94,6 +104,7 @@ export default function CardsPage() {
       setSearchTerm('');
       setDebouncedSearch('');
       setPreFilterSearchTerm(null);
+      setSelectedRarity('');
     };
 
     window.addEventListener('reset_catalog', handleReset);
@@ -117,6 +128,9 @@ export default function CardsPage() {
         setDebouncedSearch(savedSearch);
       }
       
+      const savedRarity = sessionStorage.getItem('catalog_rarity');
+      if (savedRarity) setSelectedRarity(savedRarity);
+      
       const savedItems = sessionStorage.getItem('catalog_items');
       if (savedItems) setItemsPerPage(Number(savedItems));
     }
@@ -129,8 +143,9 @@ export default function CardsPage() {
     sessionStorage.setItem('catalog_page', currentPage.toString());
     sessionStorage.setItem('catalog_filter', filterStatus);
     sessionStorage.setItem('catalog_search', searchTerm);
+    sessionStorage.setItem('catalog_rarity', selectedRarity);
     sessionStorage.setItem('catalog_items', itemsPerPage.toString());
-  }, [currentPage, filterStatus, searchTerm, itemsPerPage, isInitialized]);
+  }, [currentPage, filterStatus, searchTerm, selectedRarity, itemsPerPage, isInitialized]);
 
   // Debounce search
   useEffect(() => {
@@ -151,7 +166,7 @@ export default function CardsPage() {
     
     if (filterStatus === 'ALL_CARDS') {
       const pageParam = currentPage - 1;
-      const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}`;
+      const url = `${getApiUrl()}/api/cards?page=${pageParam}&size=${itemsPerPage}&search=${encodeURIComponent(debouncedSearch)}&rarity=${encodeURIComponent(selectedRarity)}`;
       
       Promise.all([
         fetch(url).then(res => res.json()),
@@ -187,7 +202,7 @@ export default function CardsPage() {
           setLoading(false);
         });
     }
-  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus, isInitialized]);
+  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus, selectedRarity, isInitialized]);
 
   const getCardName = (card: Card) => {
     if (language === 'pt') return card.namePt || card.name;
@@ -219,7 +234,13 @@ export default function CardsPage() {
       // Search term
       const matchesSearch = getCardName(uc.card).toLowerCase().includes(debouncedSearch.toLowerCase());
       
-      return matchesStatus && matchesUser && matchesSearch;
+      // Rarity filtering
+      let matchesRarity = true;
+      if (selectedRarity) {
+        matchesRarity = uc.rarity === selectedRarity;
+      }
+      
+      return matchesStatus && matchesUser && matchesSearch && matchesRarity;
     }).sort((a, b) => a.price - b.price);
   }
 
@@ -468,6 +489,22 @@ export default function CardsPage() {
               <option value="FOR_SALE">{t('filter_for_sale')}</option>
               <option value="FOR_TRADE">{t('filter_for_trade')}</option>
               {currentUser && <option value="MY_LISTINGS">{t('filter_my_listings')}</option>}
+            </select>
+
+            <select 
+              className={styles.filterSelect}
+              value={selectedRarity}
+              onChange={(e) => {
+                setSelectedRarity(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="">{t('all_rarities')}</option>
+              {rarities.map((rarity) => (
+                <option key={rarity} value={rarity}>
+                  {rarity}
+                </option>
+              ))}
             </select>
 
             <div className={styles.itemsPerPageContainer}>

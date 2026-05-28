@@ -22,19 +22,32 @@ public class CardController {
     @GetMapping
     public ResponseEntity<?> getCards(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String rarity,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Boolean all) {
         
         if (all != null && all) {
+            // Se for solicitada a lista completa filtrada por raridade
+            if (rarity != null && !rarity.trim().isEmpty()) {
+                return ResponseEntity.ok(cardRepository.findAllByRarity(rarity.trim(), Sort.by("name").ascending()));
+            }
             return ResponseEntity.ok(cardRepository.findAll(Sort.by("name").ascending()));
         }
         
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        if (search != null && !search.trim().isEmpty()) {
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        boolean hasRarity = rarity != null && !rarity.trim().isEmpty();
+
+        // Combinações de filtragem por busca textual e raridade
+        if (hasSearch && hasRarity) {
             String query = "%" + search.trim() + "%";
-            Page<Card> result = cardRepository.searchCards(query, pageable);
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(cardRepository.searchCardsAndRarity(query, rarity.trim(), pageable));
+        } else if (hasSearch) {
+            String query = "%" + search.trim() + "%";
+            return ResponseEntity.ok(cardRepository.searchCards(query, pageable));
+        } else if (hasRarity) {
+            return ResponseEntity.ok(cardRepository.findByRarity(rarity.trim(), pageable));
         }
         
         return ResponseEntity.ok(cardRepository.findAll(pageable));
@@ -45,5 +58,11 @@ public class CardController {
         return cardRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Endpoint para retornar todas as raridades distintas ordenadas alfabeticamente
+    @GetMapping("/rarities")
+    public ResponseEntity<?> getRarities() {
+        return ResponseEntity.ok(cardRepository.findDistinctRarities());
     }
 }
