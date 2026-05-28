@@ -258,7 +258,7 @@ export default function CardDetailPage() {
       );
 
       setAvailableListings(listings);
-      setMyCards(myCardsData.filter((c: UserCard) => c.status !== 'COLLECTION'));
+      setMyCards(myCardsData.filter((c: UserCard) => c.status === 'FOR_TRADE'));
     } catch (err) {
       console.error('Error loading modal data:', err);
       setTradeError('Error loading trade data.');
@@ -584,21 +584,12 @@ export default function CardDetailPage() {
                 {tradeError && <div style={{ color: '#ff4a4a', background: 'rgba(255, 74, 74, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255, 74, 74, 0.3)' }}>{tradeError}</div>}
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>{t('cd_modal_select_duelist')}</label>
-                  <select 
-                    value={selectedListing?.id || ''} 
-                    onChange={(e) => {
-                      const found = availableListings.find(l => l.id === Number(e.target.value));
-                      setSelectedListing(found || null);
-                    }}
-                    style={{ width: '100%', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px', borderRadius: '4px' }}
-                  >
-                    {availableListings.map(l => (
-                      <option key={l.id} value={l.id}>
-                        {l.user.username} - {l.rarity || 'Common'} ({l.condition ? (language === 'ja' ? l.condition.nameJa : language === 'pt' ? l.condition.namePt : l.condition.nameEn) : ''}) (Listing #{l.id})
-                      </option>
-                    ))}
-                  </select>
+                  <span style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                    {t('cd_modal_duelist_offering')}
+                  </span>
+                  <div style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px 15px', borderRadius: '4px', fontSize: '1rem' }}>
+                    <strong>{selectedListing?.user.username}</strong> - {selectedListing?.rarity || 'Common'} ({selectedListing?.condition ? (language === 'ja' ? selectedListing.condition.nameJa : language === 'pt' ? selectedListing.condition.namePt : selectedListing.condition.nameEn) : ''})
+                  </div>
                 </div>
 
                 <div>

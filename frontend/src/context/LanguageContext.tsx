@@ -144,6 +144,7 @@ const translations: Translations = {
   cd_trade_proposal: { en: 'Trade Proposal', pt: 'Trocar Agora', ja: 'トレード提案' },
   cd_sale_proposal: { en: 'Buy Now', pt: 'Comprar Agora', ja: '今すぐ購入' },
   cd_modal_title: { en: 'Trade Proposal for', pt: 'Proposta de Troca por', ja: 'トレード提案:' },
+  cd_modal_duelist_offering: { en: 'Duelist Offering This Card:', pt: 'Duelista Oferecendo esta Carta:', ja: 'このカードを出品しているデュエリスト:' },
   cd_modal_select_duelist: { en: 'Select Duelist Offering This Card:', pt: 'Selecione o Duelista Oferecendo esta Carta:', ja: 'このカードを出品しているデュエリストを選択:' },
   cd_modal_select_inventory: { en: 'Select Cards from your Inventory to Offer:', pt: 'Selecione Cartas do seu Inventário para Oferecer:', ja: '提供するインベントリのカードを選択:' },
   cd_modal_send_btn: { en: 'Send Trade Offer', pt: 'Enviar Proposta de Troca', ja: 'トレード提案を送信' },

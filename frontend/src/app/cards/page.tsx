@@ -352,7 +352,7 @@ export default function CardsPage() {
     try {
       const res = await fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`);
       const data = await res.json();
-      setMyCards(Array.isArray(data) ? data.filter((c: UserCard) => c.status !== 'COLLECTION') : []);
+      setMyCards(Array.isArray(data) ? data.filter((c: UserCard) => c.status === 'FOR_TRADE') : []);
       setShowTradeModal(true);
     } catch (err) {
       console.error('Error fetching my cards for trade:', err);
