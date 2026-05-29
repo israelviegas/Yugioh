@@ -68,6 +68,7 @@ export default function CardsPage() {
   
   // Trade Modal States
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Chat Modal States
   const [showChatModal, setShowChatModal] = useState(false);
@@ -348,15 +349,18 @@ export default function CardsPage() {
     setSelectedMyCardIds([]);
     setTradeSuccess('');
     setTradeError('');
+    setShowTradeModal(true);
+    setModalLoading(true);
 
     try {
       const res = await fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`);
       const data = await res.json();
       setMyCards(Array.isArray(data) ? data.filter((c: UserCard) => c.status === 'FOR_TRADE') : []);
-      setShowTradeModal(true);
     } catch (err) {
       console.error('Error fetching my cards for trade:', err);
       setMyCards([]);
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -634,6 +638,7 @@ export default function CardsPage() {
                                   handleBuyNow(item);
                                 }} 
                                 className={`btn-primary ${styles.actionBtn}`}
+                                style={{ position: 'relative', zIndex: 20 }}
                               >
                                 {t('buy_now')}
                               </button>
@@ -644,6 +649,7 @@ export default function CardsPage() {
                                   handleOpenTradeModal(item);
                                 }} 
                                 className={`btn-primary ${styles.actionBtn}`}
+                                style={{ position: 'relative', zIndex: 20 }}
                               >
                                 {t('offer_trade')}
                               </button>
@@ -727,51 +733,62 @@ export default function CardsPage() {
             {tradeSuccess && <div style={{ color: '#4aff80', background: 'rgba(74, 255, 128, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(74, 255, 128, 0.3)' }}>{tradeSuccess}</div>}
             {tradeError && <div style={{ color: '#ff4a4a', background: 'rgba(255, 74, 74, 0.1)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255, 74, 74, 0.3)' }}>{tradeError}</div>}
 
-            <div>
-              <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>{t('cd_modal_select_inventory')}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
-                {myCards.map(myCard => {
-                  const isSelected = selectedMyCardIds.includes(myCard.id);
-                  return (
-                    <div 
-                      key={myCard.id} 
-                      onClick={() => handleToggleSelectMyCard(myCard.id)}
-                      style={{ 
-                        border: isSelected ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)', 
-                        background: isSelected ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.3)',
-                        padding: '0.8rem', 
-                        borderRadius: '6px', 
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      <img 
-                        src={getCardImage(myCard.card)} 
-                        alt="" 
-                        style={{ width: '80px', height: '115px', objectFit: 'cover', borderRadius: '4px' }} 
-                        onError={(e) => { 
-                          if (e.currentTarget.src !== myCard.card.imageUrl) {
-                            e.currentTarget.src = myCard.card.imageUrl; 
-                          }
-                        }} 
-                      />
-                      <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{getCardName(myCard.card)}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({myCard.status})</span>
-                    </div>
-                  );
-                })}
-                {myCards.length === 0 && <p>{t('cd_modal_no_inventory')}</p>}
+            {modalLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '2rem 0' }}>
+                <div className={styles.loading} style={{ fontSize: '1.2rem', margin: 0 }}>
+                  {language === 'ja' ? 'インベントリを読み込み中...' : language === 'pt' ? 'Carregando seu inventário...' : 'Loading your inventory...'}
+                </div>
+                <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', marginTop: '1rem' }}>{t('cancel')}</button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <h3 style={{ marginBottom: '1rem', fontSize: '1.2rem' }}>{t('cd_modal_select_inventory')}</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem' }}>
+                    {myCards.map(myCard => {
+                      const isSelected = selectedMyCardIds.includes(myCard.id);
+                      return (
+                        <div 
+                          key={myCard.id} 
+                          onClick={() => handleToggleSelectMyCard(myCard.id)}
+                          style={{ 
+                            border: isSelected ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)', 
+                            background: isSelected ? 'rgba(212, 175, 55, 0.2)' : 'rgba(0,0,0,0.3)',
+                            padding: '0.8rem', 
+                            borderRadius: '6px', 
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <img 
+                            src={getCardImage(myCard.card)} 
+                            alt="" 
+                            style={{ width: '80px', height: '115px', objectFit: 'cover', borderRadius: '4px' }} 
+                            onError={(e) => { 
+                              if (e.currentTarget.src !== myCard.card.imageUrl) {
+                                e.currentTarget.src = myCard.card.imageUrl; 
+                              }
+                            }} 
+                          />
+                          <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{getCardName(myCard.card)}</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({myCard.status})</span>
+                        </div>
+                      );
+                    })}
+                    {myCards.length === 0 && <p>{t('cd_modal_no_inventory')}</p>}
+                  </div>
+                </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-              <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{t('cancel')}</button>
-              <button type="button" onClick={handleOfferTradeSubmit} disabled={selectedMyCardIds.length === 0} className="btn-primary">{t('cd_modal_send_btn')}</button>
-            </div>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="button" onClick={() => setShowTradeModal(false)} style={{ background: 'transparent', border: '1px solid var(--text-secondary)', color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}>{t('cancel')}</button>
+                  <button type="button" onClick={handleOfferTradeSubmit} disabled={selectedMyCardIds.length === 0} className="btn-primary">{t('cd_modal_send_btn')}</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

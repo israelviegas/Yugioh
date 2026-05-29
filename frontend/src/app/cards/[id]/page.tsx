@@ -251,17 +251,21 @@ export default function CardDetailPage() {
       const myCardsRes = await fetch(`${getApiUrl()}/api/users/${currentUser.id}/cards`);
       const myCardsData = await myCardsRes.json();
 
-      const listings = marketListings.filter((uc: UserCard) => 
+      let listings = marketListings.filter((uc: UserCard) => 
         uc.card.id === card?.id && 
         uc.user.id !== currentUser.id &&
         uc.status === 'FOR_TRADE'
       );
 
+      if (listing && !listings.some(l => l.id === listing.id)) {
+        listings = [listing, ...listings];
+      }
+
       setAvailableListings(listings);
       setMyCards(myCardsData.filter((c: UserCard) => c.status === 'FOR_TRADE'));
     } catch (err) {
       console.error('Error loading modal data:', err);
-      setTradeError('Error loading trade data.');
+      setTradeError(language === 'ja' ? 'データの読み込み中にエラーが発生しました。' : language === 'pt' ? 'Erro ao carregar dados de troca.' : 'Error loading trade data.');
     } finally {
       setModalLoading(false);
     }
