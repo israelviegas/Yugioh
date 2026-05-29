@@ -156,3 +156,24 @@
   border-radius: 20px;
   padding: 0.5rem 1.5rem;
 }
+
+.statusIcon {
+  margin-left: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: inline-block;
+  vertical-align: middle;
+  letter-spacing: -1px;
+}
+
+.statusIcon.sent {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.statusIcon.delivered {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.statusIcon.read {
+  color: #53bdeb;
+}

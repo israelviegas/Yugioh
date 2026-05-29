@@ -15,6 +15,7 @@ interface Message {
   content: string;
   createdAt: string;
   read: boolean;
+  delivered: boolean;
 }
 
 interface ChatModalProps {
@@ -295,6 +296,11 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
                     <div className={styles.messageContent}><MessageContent message={msg} /></div>
                     <div className={styles.messageTime}>
                       {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {isMine && (
+                        <span className={`${styles.statusIcon} ${msg.read ? styles.read : msg.delivered ? styles.delivered : styles.sent}`}>
+                          {msg.read || msg.delivered ? '✓✓' : '✓'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -40,6 +40,7 @@ public class MessageController {
         if (user == null) {
             return ResponseEntity.badRequest().body("User not found");
         }
+        messageRepository.markAllAsDelivered(user);
         List<Message> inbox = messageRepository.findInbox(user);
         return ResponseEntity.ok(inbox);
     }
@@ -50,6 +51,7 @@ public class MessageController {
         if (user == null) {
             return ResponseEntity.badRequest().body("User not found");
         }
+        messageRepository.markAllAsDelivered(user);
         long count = messageRepository.countByReceiverAndIsReadFalse(user);
         return ResponseEntity.ok(count);
     }

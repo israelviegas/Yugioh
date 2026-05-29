@@ -19,6 +19,7 @@ interface Message {
   content: string;
   createdAt: string;
   read: boolean;
+  delivered: boolean;
 }
 
 export default function MessagesPage() {

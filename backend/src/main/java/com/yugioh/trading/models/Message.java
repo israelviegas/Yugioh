@@ -28,6 +28,9 @@ public class Message {
     @Column(nullable = false)
     private boolean isRead = false;
 
+    @Column(nullable = false)
+    private boolean isDelivered = false;
+
     public Message() {
         this.createdAt = LocalDateTime.now();
     }
@@ -49,4 +52,7 @@ public class Message {
 
     public boolean isRead() { return isRead; }
     public void setRead(boolean read) { isRead = read; }
+
+    public boolean isDelivered() { return isDelivered; }
+    public void setDelivered(boolean delivered) { isDelivered = delivered; }
 }
