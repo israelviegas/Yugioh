@@ -28,6 +28,18 @@ export default function TiltCardWrapper({ children, className = '', style = {}, 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isMobile || !cardRef.current) return;
 
+    const target = e.target as HTMLElement;
+    const isInteractive = target.closest('button') || target.closest('a') || target.closest('.interactive-no-tilt');
+    if (isInteractive) {
+      if (tiltOnly) {
+        setTransformStyle('perspective(1000px) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)');
+      } else {
+        setTransformStyle('perspective(1000px) scale(1.05) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)');
+      }
+      setGlareStyle({ opacity: 0 });
+      return;
+    }
+
     const rect = cardRef.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -63,9 +75,21 @@ export default function TiltCardWrapper({ children, className = '', style = {}, 
     });
   };
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isMobile) return;
     setIsHovered(true);
+
+    const target = e.target as HTMLElement;
+    const isInteractive = target.closest('button') || target.closest('a') || target.closest('.interactive-no-tilt');
+    if (isInteractive) {
+      if (tiltOnly) {
+        setTransformStyle('perspective(1000px) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)');
+      } else {
+        setTransformStyle('perspective(1000px) scale(1.05) translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)');
+      }
+      return;
+    }
+
     if (tiltOnly) {
       setTransformStyle('perspective(1000px) translate3d(0px, 0px, 10px) rotateX(0deg) rotateY(0deg)');
     } else {
