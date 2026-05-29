@@ -57,8 +57,10 @@ public class DataSeeder implements CommandLineRunner {
                 System.out.println("Sincronização: Condições de cartas (NM, LP, etc) salvas.");
             }
 
-            // Always try to sync cards on startup, it will skip existing ones
-            cardSyncService.syncCards();
+            // Sync cards on startup only if database is empty to speed up dev cycles
+            if (cardRepository.count() == 0) {
+                cardSyncService.syncCards();
+            }
             
             if (userRepository.count() == 0) {
                 seedUsersAndStrategies();
@@ -96,11 +98,6 @@ public class DataSeeder implements CommandLineRunner {
 
         if (userCardRepository.count() > 0) return;
 
-        // Limpar proposicoes, msgs e cartas para recomeçar o estado aleatorio
-        messageRepository.deleteAll();
-        tradeRepository.deleteAll();
-        userCardRepository.deleteAll();
-
         List<Card> allCards = cardRepository.findAll();
         if (allCards.size() < 10) return;
 
@@ -108,7 +105,6 @@ public class DataSeeder implements CommandLineRunner {
         List<CardCondition> conditions = cardConditionRepository.findAll();
 
         User[] users = {israel, yugi, kaiba};
-        List<UserCard> createdUserCards = new ArrayList<>();
 
         for (User u : users) {
             for (int i = 0; i < 5; i++) {
@@ -116,64 +112,11 @@ public class DataSeeder implements CommandLineRunner {
                 uc.setUser(u);
                 uc.setCard(allCards.get(rand.nextInt(Math.min(50, allCards.size()))));
                 uc.setCondition(conditions.get(rand.nextInt(conditions.size())));
-                
-                int st = rand.nextInt(3);
-                if (st == 0) {
-                    uc.setStatus("COLLECTION");
-                } else if (st == 1) {
-                    uc.setStatus("FOR_SALE");
-                    uc.setPrice(10.0 + rand.nextInt(100));
-                } else {
-                    uc.setStatus("FOR_TRADE");
-                }
-                createdUserCards.add(userCardRepository.save(uc));
+                uc.setStatus("COLLECTION"); // Apenas na coleção, sem vendas ou trocas automáticas
+                userCardRepository.save(uc);
             }
         }
-
-        // Criar uma proposta de troca do Yugi para o Israel
-        List<UserCard> yugiCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(yugi.getId())).toList();
-        List<UserCard> israelCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(israel.getId())).toList();
-
-        if (!yugiCards.isEmpty() && !israelCards.isEmpty()) {
-            Trade trade = new Trade();
-            trade.setSender(yugi);
-            trade.setReceiver(israel);
-            trade.setStatus("PENDING");
-            trade.setOfferedCards(List.of(yugiCards.get(0)));
-            trade.setRequestedCards(List.of(israelCards.get(0)));
-            trade = tradeRepository.save(trade);
-
-            Message m = new Message();
-            m.setSender(yugi);
-            m.setReceiver(israel);
-            m.setContent("[SYSTEM_TRADE_PROPOSAL]:" + trade.getId());
-            messageRepository.save(m);
-            
-            Message m2 = new Message();
-            m2.setSender(yugi);
-            m2.setReceiver(israel);
-            m2.setContent("Ei Israel, o que acha dessa troca?");
-            messageRepository.save(m2);
-        }
-        
-        // Criar uma proposta de troca do Kaiba para o Israel
-        List<UserCard> kaibaCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(kaiba.getId())).toList();
-
-        if (!kaibaCards.isEmpty() && israelCards.size() > 1) {
-            Trade trade2 = new Trade();
-            trade2.setSender(kaiba);
-            trade2.setReceiver(israel);
-            trade2.setStatus("PENDING");
-            trade2.setOfferedCards(List.of(kaibaCards.get(0)));
-            trade2.setRequestedCards(List.of(israelCards.get(1)));
-            trade2 = tradeRepository.save(trade2);
-
-            Message m = new Message();
-            m.setSender(kaiba);
-            m.setReceiver(israel);
-            m.setContent("[SYSTEM_TRADE_PROPOSAL]:" + trade2.getId());
-            messageRepository.save(m);
-        }
+        System.out.println("Sincronização: Cartas dos usuários inicializadas em COLLECTION (sem ofertas/propostas automáticas).");
     }
 
     private void seedUsersAndStrategies() {
