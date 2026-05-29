@@ -25,16 +25,21 @@ public class DataSeeder implements CommandLineRunner {
     private final StrategyRepository strategyRepository;
     private final CardSyncService cardSyncService;
     private final CardConditionRepository cardConditionRepository;
+    private final TradeRepository tradeRepository;
+    private final MessageRepository messageRepository;
 
     public DataSeeder(CardRepository cardRepository, UserRepository userRepository,
                       UserCardRepository userCardRepository, StrategyRepository strategyRepository,
-                      CardSyncService cardSyncService, CardConditionRepository cardConditionRepository) {
+                      CardSyncService cardSyncService, CardConditionRepository cardConditionRepository,
+                      TradeRepository tradeRepository, MessageRepository messageRepository) {
         this.cardRepository = cardRepository;
         this.userRepository = userRepository;
         this.userCardRepository = userCardRepository;
         this.strategyRepository = strategyRepository;
         this.cardSyncService = cardSyncService;
         this.cardConditionRepository = cardConditionRepository;
+        this.tradeRepository = tradeRepository;
+        this.messageRepository = messageRepository;
     }
 
     @Override
@@ -59,15 +64,116 @@ public class DataSeeder implements CommandLineRunner {
                 seedUsersAndStrategies();
             }
 
-            if (userRepository.findByEmail("israel.viegas@gmail.com").isEmpty()) {
-                User israel = new User();
-                israel.setUsername("israel.viegas@gmail.com");
-                israel.setEmail("israel.viegas@gmail.com"); // Login via email
-                israel.setPassword("viegas");
-                israel.setRole("ADMIN");
-                userRepository.save(israel);
-            }
+            userRepository.findByEmail("israel.viegas@gmail.com").ifPresentOrElse(
+                israel -> {
+                    if ("israel.viegas@gmail.com".equals(israel.getUsername()) || israel.getUsername() == null || israel.getUsername().isEmpty()) {
+                        israel.setUsername("Israel Viegas");
+                        userRepository.save(israel);
+                    }
+                },
+                () -> {
+                    User israel = new User();
+                    israel.setUsername("Israel Viegas");
+                    israel.setEmail("israel.viegas@gmail.com"); // Login via email
+                    israel.setPassword("viegas");
+                    israel.setRole("ADMIN");
+                    userRepository.save(israel);
+                }
+            );
+
+            // Populate random proposals
+            seedRandomProposals();
         }).start();
+    }
+
+    private void seedRandomProposals() {
+        // Obter usuarios
+        User israel = userRepository.findByEmail("israel.viegas@gmail.com").orElse(null);
+        User yugi = userRepository.findByEmail("yugi@kaibacorp.com").orElse(null);
+        User kaiba = userRepository.findByEmail("seto@kaibacorp.com").orElse(null);
+
+        if (israel == null || yugi == null || kaiba == null) return;
+
+        if (userCardRepository.count() > 0) return;
+
+        // Limpar proposicoes, msgs e cartas para recomeçar o estado aleatorio
+        messageRepository.deleteAll();
+        tradeRepository.deleteAll();
+        userCardRepository.deleteAll();
+
+        List<Card> allCards = cardRepository.findAll();
+        if (allCards.size() < 10) return;
+
+        java.util.Random rand = new java.util.Random();
+        List<CardCondition> conditions = cardConditionRepository.findAll();
+
+        User[] users = {israel, yugi, kaiba};
+        List<UserCard> createdUserCards = new ArrayList<>();
+
+        for (User u : users) {
+            for (int i = 0; i < 5; i++) {
+                UserCard uc = new UserCard();
+                uc.setUser(u);
+                uc.setCard(allCards.get(rand.nextInt(Math.min(50, allCards.size()))));
+                uc.setCondition(conditions.get(rand.nextInt(conditions.size())));
+                
+                int st = rand.nextInt(3);
+                if (st == 0) {
+                    uc.setStatus("COLLECTION");
+                } else if (st == 1) {
+                    uc.setStatus("FOR_SALE");
+                    uc.setPrice(10.0 + rand.nextInt(100));
+                } else {
+                    uc.setStatus("FOR_TRADE");
+                }
+                createdUserCards.add(userCardRepository.save(uc));
+            }
+        }
+
+        // Criar uma proposta de troca do Yugi para o Israel
+        List<UserCard> yugiCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(yugi.getId())).toList();
+        List<UserCard> israelCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(israel.getId())).toList();
+
+        if (!yugiCards.isEmpty() && !israelCards.isEmpty()) {
+            Trade trade = new Trade();
+            trade.setSender(yugi);
+            trade.setReceiver(israel);
+            trade.setStatus("PENDING");
+            trade.setOfferedCards(List.of(yugiCards.get(0)));
+            trade.setRequestedCards(List.of(israelCards.get(0)));
+            trade = tradeRepository.save(trade);
+
+            Message m = new Message();
+            m.setSender(yugi);
+            m.setReceiver(israel);
+            m.setContent("[SYSTEM_TRADE_PROPOSAL]:" + trade.getId());
+            messageRepository.save(m);
+            
+            Message m2 = new Message();
+            m2.setSender(yugi);
+            m2.setReceiver(israel);
+            m2.setContent("Ei Israel, o que acha dessa troca?");
+            messageRepository.save(m2);
+        }
+        
+        // Criar uma proposta de troca do Kaiba para o Israel
+        List<UserCard> kaibaCards = createdUserCards.stream().filter(c -> c.getUser().getId().equals(kaiba.getId())).toList();
+
+        if (!kaibaCards.isEmpty() && israelCards.size() > 1) {
+            Trade trade2 = new Trade();
+            trade2.setSender(kaiba);
+            trade2.setReceiver(israel);
+            trade2.setStatus("PENDING");
+            trade2.setOfferedCards(List.of(kaibaCards.get(0)));
+            trade2.setRequestedCards(List.of(israelCards.get(1)));
+            trade2 = tradeRepository.save(trade2);
+
+            Message m = new Message();
+            m.setSender(kaiba);
+            m.setReceiver(israel);
+            m.setContent("[SYSTEM_TRADE_PROPOSAL]:" + trade2.getId());
+            messageRepository.save(m);
+        }
     }
 
     private void seedUsersAndStrategies() {

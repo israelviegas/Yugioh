@@ -166,6 +166,25 @@
   border-color: rgba(212, 175, 55, 0.7);
 }
 
+.sidebarListingCard {
+  padding: 0.8rem 1rem; /* padding reduzido para economizar espaço */
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.sidebarListingCard:hover {
+  z-index: 10;
+  box-shadow: 0 0 18px 4px rgba(212, 175, 55, 0.6), 0 0 40px 8px rgba(212, 175, 55, 0.25);
+  border-color: rgba(212, 175, 55, 0.7);
+}
+
 .pageLayout {
   display: grid;
   grid-template-columns: 1fr;
@@ -180,10 +199,12 @@
 }
 
 .sidebar {
-  padding: 2rem;
+  padding: 1.2rem; /* reduzido de 2rem */
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 90px); /* aumentado espaço vertical */
+  position: sticky;
+  top: 5.5rem; /* alinhado abaixo da navbar */
 }
 
 .sidebarList {
@@ -191,8 +212,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  padding-right: 0.5rem; /* space for scrollbar */
+  gap: 0.8rem; /* reduzido de 1.2rem */
+  padding-right: 0.4rem;
 }
 
 .backButton {

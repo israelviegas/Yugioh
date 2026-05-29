@@ -166,7 +166,17 @@ const translations: Translations = {
   options_available: { en: 'Sale or trade options available', pt: 'Existem opções de venda ou troca', ja: '販売・トレードのオプションあり' },
   my_proposal: { en: 'My Proposal', pt: 'Minha proposta', ja: 'マイプロポーザル' },
   filter_rarity: { en: 'Rarity', pt: 'Raridade', ja: 'レアリティ' },
-  all_rarities: { en: 'All Rarities', pt: 'Todas as Raridades', ja: 'すべてのレアリティ' }
+  all_rarities: { en: 'All Rarities', pt: 'Todas as Raridades', ja: 'すべてのレアリティ' },
+  system_trade_proposal_inbox: {
+    en: 'Hi! I sent you a trade proposal. View details and respond on the Trade Offers page!',
+    pt: 'Olá! Enviei uma proposta de troca para você. Veja os detalhes e responda na página de Ofertas de Troca!',
+    ja: 'こんにちは！トレード提案を送りました。トレードオファーページで詳細を確認して回答してください！'
+  },
+  system_trade_proposal_chat: {
+    en: 'Hi! I sent you a trade proposal. View details and respond on the [Trade Offers](/profile?tab=trades) page!',
+    pt: 'Olá! Enviei uma proposta de troca para você. Veja os detalhes e responda na página de [Ofertas de Troca](/profile?tab=trades)!',
+    ja: 'こんにちは！トレード提案を送りました。[トレードオファー](/profile?tab=trades)ページで詳細を確認して回答してください！'
+  }
 };
 
 interface LanguageContextType {

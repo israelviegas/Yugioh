@@ -162,3 +162,13 @@
   vertical-align: middle;
   box-shadow: 0 0 8px var(--accent-gold);
 }
+
+.unreadItem {
+  border-color: rgba(212, 175, 55, 0.45) !important;
+  background: linear-gradient(135deg, var(--card-bg), rgba(212, 175, 55, 0.06)) !important;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.12);
+}
+
+.unreadItem::before {
+  opacity: 1 !important;
+}

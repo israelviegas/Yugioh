@@ -59,8 +59,10 @@ export default function Navbar() {
     }
 
     window.addEventListener('auth_change', checkAuth);
+    window.addEventListener('storage', checkAuth);
     return () => {
       window.removeEventListener('auth_change', checkAuth);
+      window.removeEventListener('storage', checkAuth);
     };
   }, []);
 

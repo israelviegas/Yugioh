@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { getApiUrl } from '@/config';
 import { useLanguage } from '@/context/LanguageContext';
+import ChatModal from '@/components/ChatModal';
 import styles from './Profile.module.css';
 
 interface Card {
@@ -44,12 +45,42 @@ interface Trade {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
+
   const { t, language, formatPrice, currencySymbol } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [userCards, setUserCards] = useState<UserCard[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [activeTab, setActiveTab] = useState('ALL');
+  const [chatPartner, setChatPartner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (tab) {
+      const upperTab = tab.toUpperCase();
+      if (['ALL', 'COLLECTION', 'FOR_SALE', 'FOR_TRADE', 'TRADES'].includes(upperTab)) {
+        setActiveTab(upperTab);
+      }
+    }
+  }, [tab]);
+
+  const offerId = searchParams.get('offerId');
+  
+  useEffect(() => {
+    if (activeTab === 'TRADES' && offerId && trades.length > 0) {
+      setTimeout(() => {
+        const element = document.getElementById(`trade-${offerId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.style.transition = 'box-shadow 0.3s ease-in-out';
+          element.style.boxShadow = '0 0 15px var(--accent-gold)';
+          setTimeout(() => { element.style.boxShadow = ''; }, 3000);
+        }
+      }, 100);
+    }
+  }, [activeTab, offerId, trades]);
+
   const [conditions, setConditions] = useState<any[]>([]);
   // Controla o preço digitado localmente — só salva no servidor ao sair do campo
   const [editingPrices, setEditingPrices] = useState<Record<number, string>>({});
@@ -101,7 +132,7 @@ export default function ProfilePage() {
         setConditions(Array.isArray(condData) ? condData : []);
       }
       setUserCards(Array.isArray(cardsData) ? cardsData : []);
-      setTrades(Array.isArray(tradesData) ? tradesData : []);
+      setTrades(Array.isArray(tradesData) ? tradesData.sort((a, b) => b.id - a.id) : []);
     } catch (err) {
       console.error('Error fetching profile data:', err);
       setUserCards([]);
@@ -373,8 +404,9 @@ export default function ProfilePage() {
               <div className={styles.tradesList}>
                 {trades.map(trade => {
                   const isReceiver = trade.receiver.id === user.id;
+                  const otherUser = isReceiver ? trade.sender : trade.receiver;
                   return (
-                    <div key={trade.id} className={`${styles.tradeItem} glass-panel`}>
+                    <div key={trade.id} id={`trade-${trade.id}`} className={`${styles.tradeItem} glass-panel`}>
                       <div className={styles.tradeHeader}>
                         <span className={styles.tradeParticipants}>
                           {trade.sender.username} ➔ {trade.receiver.username}
@@ -431,12 +463,22 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      {trade.status === 'PENDING' && isReceiver && (
-                        <div className={styles.tradeActions}>
-                          <button onClick={() => handleRespondTrade(trade.id, 'ACCEPTED')} className={styles.acceptBtn}>{t('prof_accept_btn')}</button>
-                          <button onClick={() => handleRespondTrade(trade.id, 'REJECTED')} className={styles.rejectBtn}>{t('prof_reject_btn')}</button>
-                        </div>
-                      )}
+                      <div className={styles.tradeActions}>
+                        {trade.status === 'PENDING' && isReceiver && (
+                          <>
+                            <button onClick={() => handleRespondTrade(trade.id, 'ACCEPTED')} className={styles.acceptBtn}>{t('prof_accept_btn')}</button>
+                            <button onClick={() => handleRespondTrade(trade.id, 'REJECTED')} className={styles.rejectBtn}>{t('prof_reject_btn')}</button>
+                          </>
+                        )}
+                        <button 
+                          type="button"
+                          onClick={() => setChatPartner(otherUser)} 
+                          className="btn-secondary"
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '8px 16px', fontSize: '0.9rem', width: 'auto' }}
+                        >
+                          💬 {t('chat_with')} {otherUser.username}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -465,7 +507,11 @@ export default function ProfilePage() {
                       }} 
                     />
                     <h3 className={styles.cardName}>{getCardName(uc.card)}</h3>
-                    <span className={styles.cardStatus}>{uc.status}</span>
+                    <span className={styles.cardStatus}>
+                      {uc.status === 'COLLECTION' ? t('prof_collection') : 
+                       uc.status === 'FOR_SALE' ? t('for_sale') : 
+                       uc.status === 'FOR_TRADE' ? t('for_trade') : uc.status}
+                    </span>
                     {uc.status === 'FOR_SALE' && <span className={styles.cardPrice}>{formatPrice(uc.price)}</span>}
 
                     <div className={styles.cardActions}>
@@ -587,6 +633,13 @@ export default function ProfilePage() {
             </form>
           </div>
         </div>
+      )}
+      {chatPartner && (
+        <ChatModal
+          currentUser={user}
+          targetUser={chatPartner}
+          onClose={() => setChatPartner(null)}
+        />
       )}
     </div>
   );

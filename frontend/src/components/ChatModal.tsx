@@ -14,6 +14,7 @@ interface Message {
   receiver: User;
   content: string;
   createdAt: string;
+  read: boolean;
 }
 
 interface ChatModalProps {
@@ -23,14 +24,57 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
+// Shared cache for card searches and marketplace listings to avoid duplicate fetches
+const cardCache: { [key: string]: Promise<any> } = {};
+let marketListingsPromise: Promise<any[]> | null = null;
+
+export function getMarketListings(): Promise<any[]> {
+  if (!marketListingsPromise) {
+    marketListingsPromise = fetch(`${getApiUrl()}/api/user-cards/market`)
+      .then(res => res.json())
+      .catch(err => {
+        console.error("Error fetching market listings in cache", err);
+        marketListingsPromise = null; // reset on error so it can retry
+        return [];
+      });
+  }
+  return marketListingsPromise;
+}
+
+export function searchCard(searchName: string): Promise<any> {
+  if (!cardCache[searchName]) {
+    cardCache[searchName] = fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`)
+      .then(res => res.json())
+      .catch(err => {
+        console.error("Error searching card in cache", err);
+        delete cardCache[searchName]; // delete on error so it can retry
+        return null;
+      });
+  }
+  return cardCache[searchName];
+}
+
+export function clearMarketListingsCache() {
+  marketListingsPromise = null;
+}
+
 function MessageContent({ message }: { message: Message }) {
+  const { t, language } = useLanguage();
   const content = message.content;
   const [parsedContent, setParsedContent] = useState<React.ReactNode>(content);
 
   useEffect(() => {
+    const isSystemTradeProposal = (text: string) => {
+      return text.startsWith('[SYSTEM_TRADE_PROPOSAL]') ||
+        text === 'Olá! Enviei uma proposta de troca para você. Veja os detalhes e responda na página de [Ofertas de Troca](/profile?tab=trades)!' ||
+        text === 'Hi! I sent you a trade proposal. View details and respond on the [Trade Offers](/profile?tab=trades) page!' ||
+        text === 'こんにちは！トレード提案を送りました。[トレードオファー](/profile?tab=trades)ページで詳細を確認して回答してください！';
+    };
+
+    const textToParse = isSystemTradeProposal(content) ? t('system_trade_proposal_chat') : content;
     const regex = /(Olá, tenho interesse na sua carta|Hi, I have interest in your card|こんにちは、あなたのカードに興味があります)\s+([^!]+)(?:!)?/i;
-    const match = content.match(regex);
-    console.log("[MessageContent] content:", content, "match:", match);
+    const match = textToParse.match(regex);
+    console.log("[MessageContent] content:", content, "textToParse:", textToParse, "match:", match);
     if (match) {
       const prefix = match[1];
       const cardNameText = match[2].trim(); // e.g. "A Case for K9" (PT-BR)
@@ -40,10 +84,10 @@ function MessageContent({ message }: { message: Message }) {
       
       let isCancelled = false;
 
-      // Executa as requisições em paralelo para buscar a carta e a lista de anúncios
+      // Executa as requisições utilizando o cache compartilhado em paralelo
       Promise.all([
-        fetch(`${getApiUrl()}/api/cards?search=${encodeURIComponent(searchName)}&size=5`).then(res => res.json()),
-        fetch(`${getApiUrl()}/api/user-cards/market`).then(res => res.json())
+        searchCard(searchName),
+        getMarketListings()
       ])
       .then(([cardsData, marketData]) => {
         if (isCancelled) return;
@@ -73,7 +117,7 @@ function MessageContent({ message }: { message: Message }) {
             const href = `/cards/${cardId}${listingParam}`;
             
             const matchStr = match[0];
-            const parts = content.split(matchStr);
+            const parts = textToParse.split(matchStr);
             const hasExclamation = matchStr.endsWith('!');
             
             setParsedContent(
@@ -102,8 +146,43 @@ function MessageContent({ message }: { message: Message }) {
       return () => {
         isCancelled = true;
       };
+    } else {
+      const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/;
+      const mdMatch = textToParse.match(mdLinkRegex);
+      if (mdMatch) {
+        const linkText = mdMatch[1];
+        let linkUrl = mdMatch[2];
+        
+        if (content.startsWith('[SYSTEM_TRADE_PROPOSAL]:')) {
+          const tradeId = content.split(':')[1];
+          if (tradeId) {
+            linkUrl += `&offerId=${tradeId}`;
+          }
+        }
+        
+        const matchStr = mdMatch[0];
+        const parts = textToParse.split(matchStr);
+
+        setParsedContent(
+          <>
+            {parts[0]}
+            <a 
+              href={linkUrl} 
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-gold)', textDecoration: 'underline', fontWeight: 'bold' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {linkText}
+            </a>
+            {parts[1]}
+          </>
+        );
+      } else {
+        setParsedContent(textToParse);
+      }
     }
-  }, [content, message.receiver.id]);
+  }, [content, message.receiver.id, language, t]);
 
   return <span>{parsedContent}</span>;
 }
@@ -117,13 +196,31 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
 
   const fetchMessages = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('yugioh_user');
+        if (!stored) {
+          onClose();
+          return;
+        }
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed.id != currentUser.id) {
+            onClose();
+            return;
+          }
+        } catch (e) {
+          onClose();
+          return;
+        }
+      }
+
       const res = await fetch(`${getApiUrl()}/api/messages/${currentUser.id}/${targetUser.id}`);
       if (res.ok) {
         const data = await res.json();
         setMessages(data);
 
         // Check if any message from the target user is unread
-        const hasUnread = Array.isArray(data) && data.some((msg: any) => msg.sender.id === targetUser.id && !msg.read);
+        const hasUnread = Array.isArray(data) && data.some((msg: any) => msg.sender.id == targetUser.id && !msg.read);
         if (hasUnread) {
           await fetch(`${getApiUrl()}/api/messages/${currentUser.id}/${targetUser.id}/read`, {
             method: 'PUT'
@@ -137,6 +234,11 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Clear listings cache on mount to ensure fresh data for this chat session
+    clearMarketListingsCache();
+  }, []);
 
   useEffect(() => {
     fetchMessages();
@@ -186,7 +288,7 @@ export default function ChatModal({ currentUser, targetUser, initialMessage, onC
             <div className={styles.loading}>Loading...</div>
           ) : (
             messages.map(msg => {
-              const isMine = msg.sender.id === currentUser.id;
+              const isMine = msg.sender.id == currentUser.id;
               return (
                 <div key={msg.id} className={`${styles.messageWrapper} ${isMine ? styles.mine : styles.theirs}`}>
                   <div className={styles.messageBubble}>

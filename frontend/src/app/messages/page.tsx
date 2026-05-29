@@ -46,6 +46,24 @@ export default function MessagesPage() {
   }, [router]);
 
   const fetchInbox = async (userId: number) => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('yugioh_user');
+      if (!stored) {
+        router.push('/login');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.id != userId) {
+          setCurrentUser(parsed);
+          return;
+        }
+      } catch (e) {
+        router.push('/login');
+        return;
+      }
+    }
+
     try {
       const res = await fetch(`${getApiUrl()}/api/messages/${userId}/inbox`);
       if (res.ok) {
@@ -83,8 +101,8 @@ export default function MessagesPage() {
       }
       setConversations(prev =>
         prev.map(c => {
-          const cPartner = c.sender.id === currentUser.id ? c.receiver : c.sender;
-          if (cPartner.id === partner.id) {
+          const cPartner = c.sender.id == currentUser.id ? c.receiver : c.sender;
+          if (cPartner.id == partner.id) {
             return { ...c, read: true };
           }
           return c;
@@ -132,14 +150,17 @@ export default function MessagesPage() {
       ) : (
         <div className={styles.inboxList}>
           {conversations.map((msg) => {
-            const partner = msg.sender.id === currentUser.id ? msg.receiver : msg.sender;
+            const partner = msg.sender.id == currentUser.id ? msg.receiver : msg.sender;
             const initials = partner.username ? partner.username.slice(0, 2).toUpperCase() : '??';
-            const isUnread = !msg.read && msg.sender.id !== currentUser.id;
+            // Mensagem não lida = receiver sou eu E ainda não foi lida
+            const isUnreadByMe = !msg.read && msg.receiver.id == currentUser.id;
+            const isUnreadByThem = !msg.read && msg.sender.id == currentUser.id;
+            const isUnread = isUnreadByMe || isUnreadByThem;
 
             return (
               <div 
                 key={msg.id} 
-                className={styles.conversationItem}
+                className={`${styles.conversationItem} ${isUnreadByMe ? styles.unreadItem : ''}`}
                 onClick={() => handleOpenChat(partner)}
               >
                 <div className={styles.leftSection}>
@@ -147,9 +168,19 @@ export default function MessagesPage() {
                   <div className={styles.details}>
                     <h3 className={styles.partnerName}>
                       {partner.username}
-                      {isUnread && <span className={styles.unreadDot} style={{ marginLeft: '8px' }}></span>}
+                      {isUnreadByMe && <span className={styles.unreadDot} style={{ marginLeft: '8px' }}></span>}
                     </h3>
-                    <p className={`${styles.lastMsg} ${isUnread ? styles.unreadText : ''}`}>{msg.content}</p>
+                    <p className={`${styles.lastMsg} ${isUnread ? styles.unreadText : ''}`}>
+                      {(() => {
+                        const isSystemTradeProposal = (text: string) => {
+                          return text.startsWith('[SYSTEM_TRADE_PROPOSAL]') ||
+                            text === 'Olá! Enviei uma proposta de troca para você. Veja os detalhes e responda na página de [Ofertas de Troca](/profile?tab=trades)!' ||
+                            text === 'Hi! I sent you a trade proposal. View details and respond on the [Trade Offers](/profile?tab=trades) page!' ||
+                            text === 'こんにちは！トレード提案を送りました。[トレードオファー](/profile?tab=trades)ページで詳細を確認して回答してください！';
+                        };
+                        return isSystemTradeProposal(msg.content) ? t('system_trade_proposal_inbox') : msg.content;
+                      })()}
+                    </p>
                   </div>
                 </div>
 

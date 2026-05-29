@@ -2,6 +2,7 @@ package com.yugioh.trading.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -38,4 +39,12 @@ public class Trade {
 
     // Status: PENDING, ACCEPTED, REJECTED
     private String status;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

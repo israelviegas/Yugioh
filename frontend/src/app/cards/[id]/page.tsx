@@ -226,7 +226,7 @@ export default function CardDetailPage() {
       }
       return;
     }
-    if (user.id === currentUser.id) return;
+    if (user.id == currentUser.id) return;
     setChatTargetUser(user);
     setShowChatModal(true);
   };
@@ -291,7 +291,8 @@ export default function CardDetailPage() {
           senderId: currentUser.id,
           receiverId: selectedListing.user.id,
           offeredCardIds: selectedMyCardIds,
-          requestedCardIds: [selectedListing.id]
+          requestedCardIds: [selectedListing.id],
+          language: language
         })
       });
 
@@ -429,7 +430,13 @@ export default function CardDetailPage() {
       </div>
 
       {(otherListings.length > 0 || featuredListing) && (
-        <div className={`${styles.sidebar} glass-panel`} style={{ gap: '1.5rem' }}>
+        <div 
+          className={`${styles.sidebar} glass-panel`} 
+          style={{ 
+            gap: '0.8rem',
+            height: (featuredListing && otherListings.length > 0) ? 'calc(100vh - 90px)' : 'auto'
+          }}
+        >
           {featuredListing && (
             (() => {
               // Verifica se a proposta em destaque pertence ao usuário logado
@@ -439,7 +446,7 @@ export default function CardDetailPage() {
                   <h2 style={{ color: 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.4rem' }}>
                     {isFeaturedOwner ? t('my_proposal') : (language === 'ja' ? '選択した提案' : language === 'pt' ? 'Proposta Selecionada' : 'Selected Proposal')}
                   </h2>
-                  <div className={`${styles.marketListingCard} glass-panel`} style={{ marginTop: '1rem', border: '1px solid var(--accent-gold)', background: 'rgba(212, 175, 55, 0.05)' }}>
+                  <div className={`${styles.sidebarListingCard} glass-panel`} style={{ marginTop: '0.5rem', border: '1px solid var(--accent-gold)', background: 'rgba(212, 175, 55, 0.05)' }}>
                     <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
                       <div className={cardStyles.owner} style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
                         {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{featuredListing.user?.username}</span>
@@ -502,12 +509,12 @@ export default function CardDetailPage() {
 
           {otherListings.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0 }}>
-              <h2 style={{ color: featuredListing ? 'var(--text-secondary)' : 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', margin: '0 0 1rem 0', fontFamily: 'Cinzel, serif', fontSize: featuredListing ? '1.2rem' : '1.4rem', flexShrink: 0 }}>
+              <h2 style={{ color: featuredListing ? 'var(--text-secondary)' : 'var(--accent-gold)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', margin: '0 0 0.5rem 0', fontFamily: 'Cinzel, serif', fontSize: featuredListing ? '1.2rem' : '1.4rem', flexShrink: 0 }}>
                 {language === 'ja' ? (featuredListing ? 'その他の出品' : 'マーケット出品') : language === 'pt' ? (featuredListing ? 'Outros Anúncios' : 'Anúncios do Mercado') : (featuredListing ? 'Other Listings' : 'Market Listings')}
               </h2>
               <div className={styles.sidebarList}>
             {otherListings.map(item => (
-              <div key={`uc-${item.id}`} className={`${styles.marketListingCard} glass-panel`}>
+              <div key={`uc-${item.id}`} className={`${styles.sidebarListingCard} glass-panel`}>
                 <div className={cardStyles.cardInfo} style={{ padding: 0 }}>
                   <div className={cardStyles.owner} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>
                     {t('listed_by')} <span style={{ color: 'var(--text-primary)' }}>{item.user?.username}</span>
@@ -625,7 +632,11 @@ export default function CardDetailPage() {
                             }} 
                           />
                           <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>{getCardName(myCard.card)}</span>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>({myCard.status})</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            ({myCard.status === 'COLLECTION' ? t('prof_collection') : 
+                              myCard.status === 'FOR_SALE' ? t('for_sale') : 
+                              myCard.status === 'FOR_TRADE' ? t('for_trade') : myCard.status})
+                          </span>
                         </div>
                       );
                     })}

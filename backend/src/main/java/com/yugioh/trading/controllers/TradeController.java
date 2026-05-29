@@ -3,9 +3,11 @@ package com.yugioh.trading.controllers;
 import com.yugioh.trading.models.Trade;
 import com.yugioh.trading.models.User;
 import com.yugioh.trading.models.UserCard;
+import com.yugioh.trading.models.Message;
 import com.yugioh.trading.repositories.TradeRepository;
 import com.yugioh.trading.repositories.UserCardRepository;
 import com.yugioh.trading.repositories.UserRepository;
+import com.yugioh.trading.repositories.MessageRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +21,14 @@ public class TradeController {
     private final TradeRepository tradeRepository;
     private final UserRepository userRepository;
     private final UserCardRepository userCardRepository;
+    private final MessageRepository messageRepository;
 
-    public TradeController(TradeRepository tradeRepository, UserRepository userRepository, UserCardRepository userCardRepository) {
+    public TradeController(TradeRepository tradeRepository, UserRepository userRepository, 
+                           UserCardRepository userCardRepository, MessageRepository messageRepository) {
         this.tradeRepository = tradeRepository;
         this.userRepository = userRepository;
         this.userCardRepository = userCardRepository;
+        this.messageRepository = messageRepository;
     }
 
     @PostMapping
@@ -50,12 +55,20 @@ public class TradeController {
         trade.setStatus("PENDING");
 
         Trade saved = tradeRepository.save(trade);
+
+        // Criar mensagem automática de sistema no chat com o ID da trade para deep-link
+        Message systemMessage = new Message();
+        systemMessage.setSender(senderOpt.get());
+        systemMessage.setReceiver(receiverOpt.get());
+        systemMessage.setContent("[SYSTEM_TRADE_PROPOSAL]:" + saved.getId());
+        messageRepository.save(systemMessage);
+
         return ResponseEntity.ok(saved);
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Trade>> getUserTrades(@PathVariable Long userId) {
-        List<Trade> trades = tradeRepository.findBySenderIdOrReceiverId(userId, userId);
+        List<Trade> trades = tradeRepository.findBySenderIdOrReceiverIdOrderByCreatedAtDesc(userId, userId);
         return ResponseEntity.ok(trades);
     }
 
@@ -103,6 +116,7 @@ public class TradeController {
         private Long receiverId;
         private List<Long> offeredCardIds;
         private List<Long> requestedCardIds;
+        private String language;
 
         public Long getSenderId() { return senderId; }
         public void setSenderId(Long senderId) { this.senderId = senderId; }
@@ -112,6 +126,8 @@ public class TradeController {
         public void setOfferedCardIds(List<Long> offeredCardIds) { this.offeredCardIds = offeredCardIds; }
         public List<Long> getRequestedCardIds() { return requestedCardIds; }
         public void setRequestedCardIds(List<Long> requestedCardIds) { this.requestedCardIds = requestedCardIds; }
+        public String getLanguage() { return language; }
+        public void setLanguage(String language) { this.language = language; }
     }
 
     static class RespondTradeRequest {
